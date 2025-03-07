@@ -15,7 +15,7 @@ export default function Dashboard({
     inProgressCourses,
     completedCourses,
     certificates,
-    recentActivities,
+    // recentActivities,
 }) {
     return (
         <StudentLayout auth={auth}>

@@ -94,4 +94,13 @@ class User extends Authenticatable
     {
         return $this->role === 'student';
     }
+
+    /**
+     * Get the courses that the user has wishlisted.
+     */
+    public function wishlistedCourses()
+    {
+        return $this->belongsToMany(Course::class, 'wishlists')
+            ->withTimestamps();
+    }
 }

@@ -139,6 +139,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
         Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
         Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+
+        // Wishlist routes
+        Route::get('/wishlist', [StudentCourseController::class, 'wishlist'])->name('wishlist');
+        Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'addToWishlist'])->name('courses.wishlist.add');
+        Route::delete('/courses/{course}/wishlist', [StudentCourseController::class, 'removeFromWishlist'])->name('courses.wishlist.remove');
+        Route::get('/courses/{course}/wishlist/check', [StudentCourseController::class, 'isWishlisted'])->name('courses.wishlist.check');
     });
 });
 
