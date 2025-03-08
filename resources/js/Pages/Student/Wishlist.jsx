@@ -9,11 +9,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
-import StudentLayout from '@/Layouts/StudentLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { BookOpen, Trash2 } from 'lucide-react';
 
-export default function Wishlist({ auth, courses }) {
+export default function Wishlist({ courses }) {
     const { delete: destroy } = useForm();
 
     const handleRemoveFromWishlist = (courseSlug) => {
@@ -23,7 +23,7 @@ export default function Wishlist({ auth, courses }) {
     };
 
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="My Wishlist" />
 
             <div className="space-y-6">
@@ -147,6 +147,6 @@ export default function Wishlist({ auth, courses }) {
                     />
                 )}
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }

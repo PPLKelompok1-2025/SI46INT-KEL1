@@ -216,7 +216,7 @@ class CourseController extends Controller
     public function wishlist()
     {
         $user = Auth::user();
-        
+
         $wishlistedCourses = $user->wishlistedCourses()
             ->with(['user', 'category', 'lessons'])
             ->get()
@@ -225,12 +225,12 @@ class CourseController extends Controller
                 $enrollment = Enrollment::where('user_id', $user->id)
                     ->where('course_id', $course->id)
                     ->first();
-                
+
                 $course->is_enrolled = !is_null($enrollment);
-                
+
                 return $course;
             });
-        
+
         return Inertia::render('Student/Wishlist', [
             'courses' => $wishlistedCourses
         ]);
@@ -245,21 +245,21 @@ class CourseController extends Controller
     public function addToWishlist(Course $course)
     {
         $user = Auth::user();
-        
+
         // Check if the course is already in the wishlist
         $existingWishlist = Wishlist::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->first();
-        
+
         if (!$existingWishlist) {
             Wishlist::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id
             ]);
-            
+
             return redirect()->back()->with('success', 'Course added to wishlist');
         }
-        
+
         return redirect()->back()->with('info', 'Course is already in your wishlist');
     }
 
@@ -272,11 +272,11 @@ class CourseController extends Controller
     public function removeFromWishlist(Course $course)
     {
         $user = Auth::user();
-        
+
         Wishlist::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->delete();
-        
+
         return redirect()->back()->with('success', 'Course removed from wishlist');
     }
 
@@ -289,11 +289,11 @@ class CourseController extends Controller
     public function isWishlisted(Course $course)
     {
         $user = Auth::user();
-        
+
         $isWishlisted = Wishlist::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->exists();
-        
+
         return response()->json([
             'isWishlisted' => $isWishlisted
         ]);

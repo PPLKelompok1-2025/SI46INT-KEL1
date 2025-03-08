@@ -79,4 +79,13 @@ class Course extends Model
     {
         return $this->enrollments()->count();
     }
+
+    /**
+     * Get the notes for the course.
+     */
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
 }

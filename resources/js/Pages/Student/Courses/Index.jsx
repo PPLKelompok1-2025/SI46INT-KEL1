@@ -10,13 +10,13 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import { Progress } from '@/Components/ui/progress';
-import StudentLayout from '@/Layouts/StudentLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { BookOpen, Clock } from 'lucide-react';
 
-export default function Index({ auth, courses }) {
+export default function Index({ courses }) {
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="My Courses" />
 
             <div className="space-y-6">
@@ -135,6 +135,6 @@ export default function Index({ auth, courses }) {
                     />
                 )}
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }

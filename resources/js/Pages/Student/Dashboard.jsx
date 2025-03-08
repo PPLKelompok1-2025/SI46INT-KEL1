@@ -5,20 +5,20 @@ import StatsOverview from '@/Components/Student/StatsOverview';
 import WelcomeCard from '@/Components/Student/WelcomeCard';
 import { Button } from '@/Components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import StudentLayout from '@/Layouts/StudentLayout';
-import { Head, Link } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { BookOpen } from 'lucide-react';
 
 export default function Dashboard({
-    auth,
     enrolledCourses,
     inProgressCourses,
     completedCourses,
     certificates,
     // recentActivities,
 }) {
+    const { auth } = usePage().props;
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="Student Dashboard" />
 
             <div className="space-y-6">
@@ -151,6 +151,6 @@ export default function Dashboard({
                     </TabsContent>
                 </Tabs>
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }

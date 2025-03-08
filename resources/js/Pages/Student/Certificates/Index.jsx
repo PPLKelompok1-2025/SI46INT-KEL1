@@ -1,11 +1,11 @@
 import CertificateCard from '@/Components/Student/CertificateCard';
 import EmptyState from '@/Components/Student/EmptyState';
-import StudentLayout from '@/Layouts/StudentLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 
 export default function Index({ auth, certificates }) {
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="My Certificates" />
 
             <div className="space-y-6">
@@ -33,6 +33,6 @@ export default function Index({ auth, certificates }) {
                     />
                 )}
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }

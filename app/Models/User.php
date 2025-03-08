@@ -103,4 +103,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Course::class, 'wishlists')
             ->withTimestamps();
     }
+
+    /**
+     * Get the notes for the user.
+     */
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
 }

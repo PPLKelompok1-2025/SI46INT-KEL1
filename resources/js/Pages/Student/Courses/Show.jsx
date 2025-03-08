@@ -22,7 +22,7 @@ import { Label } from '@/Components/ui/label';
 import { Progress } from '@/Components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Textarea } from '@/Components/ui/textarea';
-import StudentLayout from '@/Layouts/StudentLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
@@ -34,13 +34,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Show({
-    auth,
-    course,
-    isEnrolled,
-    progress,
-    hasReviewed,
-}) {
+export default function Show({ course, isEnrolled, progress, hasReviewed }) {
     const { post, processing } = useForm();
     const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
     const [rating, setRating] = useState(5);
@@ -62,7 +56,7 @@ export default function Show({
     };
 
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title={course.title} />
 
             <div className="space-y-6">
@@ -414,6 +408,6 @@ export default function Show({
                     </TabsContent>
                 </Tabs>
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }

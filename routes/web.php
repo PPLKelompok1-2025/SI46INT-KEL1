@@ -23,6 +23,7 @@ use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
 
     // Payment routes
     Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
@@ -116,6 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:student'])->prefix('student')->name('student.')->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
 
+
         // Course enrollment and learning
         Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
         Route::get('/courses/{course:slug}', [StudentCourseController::class, 'show'])->name('courses.show');
@@ -145,6 +148,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'addToWishlist'])->name('courses.wishlist.add');
         Route::delete('/courses/{course}/wishlist', [StudentCourseController::class, 'removeFromWishlist'])->name('courses.wishlist.remove');
         Route::get('/courses/{course}/wishlist/check', [StudentCourseController::class, 'isWishlisted'])->name('courses.wishlist.check');
+
+        // Notes routes
+        Route::get('/notes', [StudentNoteController::class, 'index'])->name('notes.index');
+        Route::get('/courses/{course}/notes/create', [StudentNoteController::class, 'create'])->name('notes.create');
+        Route::post('/courses/{course}/notes', [StudentNoteController::class, 'store'])->name('notes.store');
+        Route::get('/notes/{note}/edit', [StudentNoteController::class, 'edit'])->name('notes.edit');
+        Route::put('/notes/{note}', [StudentNoteController::class, 'update'])->name('notes.update');
+        Route::delete('/notes/{note}', [StudentNoteController::class, 'destroy'])->name('notes.destroy');
     });
 });
 

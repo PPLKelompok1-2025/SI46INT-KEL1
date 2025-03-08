@@ -1,6 +1,6 @@
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import StudentLayout from '@/Layouts/StudentLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Award, Download } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function Show({ auth, certificate }) {
     const issuedDate = new Date(certificate.issued_at).toLocaleDateString();
 
     return (
-        <StudentLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="Certificate" />
 
             <div className="space-y-6">
@@ -120,6 +120,6 @@ export default function Show({ auth, certificate }) {
                     </div>
                 </div>
             </div>
-        </StudentLayout>
+        </AuthenticatedLayout>
     );
 }
