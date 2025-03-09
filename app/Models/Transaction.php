@@ -14,6 +14,7 @@ class Transaction extends Model
         'course_id',
         'transaction_id',
         'amount',
+        'instructor_amount',
         'currency',
         'payment_method',
         'status',

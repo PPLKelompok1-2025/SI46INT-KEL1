@@ -19,7 +19,7 @@ class CourseFactory extends Factory
     public function definition(): array
     {
         $title = fake()->unique()->sentence(rand(3, 6));
-        $price = fake()->randomElement([0, 19.99, 29.99, 49.99, 99.99]);
+        $price = fake()->randomElement([0, 99000, 149000, 199000, 299000, 499000]);
 
         return [
             'title' => $title,

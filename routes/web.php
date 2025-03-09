@@ -127,9 +127,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/assignments/{assignment}/submissions', [InstructorAssignmentController::class, 'submissions'])->name('assignments.submissions');
         Route::patch('/assignments/submissions/{submission}/grade', [InstructorAssignmentController::class, 'gradeSubmission'])->name('assignments.submissions.grade');
 
-        // Earnings
-        Route::get('/earnings', [EarningController::class, 'index'])->name('earnings');
-        Route::get('/earnings/withdraw', [EarningController::class, 'withdraw'])->name('earnings.withdraw');
+        // Earnings routes
+        Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
+        Route::get('/earnings/withdraw', [EarningController::class, 'withdrawForm'])->name('earnings.withdraw');
+        Route::post('/earnings/withdraw', [EarningController::class, 'requestWithdrawal'])->name('earnings.request-withdrawal');
+        Route::get('/earnings/courses/{course}', [EarningController::class, 'courseEarnings'])->name('earnings.course');
     });
 
     // Student routes

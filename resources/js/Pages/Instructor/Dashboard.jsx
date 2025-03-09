@@ -72,7 +72,7 @@ export default function Dashboard({
                                     Total Earnings
                                 </p>
                                 <h3 className="text-2xl font-bold">
-                                    ${stats.totalEarnings}
+                                    {stats.totalEarnings}
                                 </h3>
                             </div>
                             <DollarSign className="h-8 w-8 text-primary" />

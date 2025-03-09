@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->string('transaction_id');
             $table->decimal('amount', 8, 2);
-            $table->string('currency')->default('USD');
+            $table->string('currency')->default('IDR');
             $table->string('payment_method');
             $table->string('status'); // completed, pending, failed, refunded
             $table->timestamp('paid_at')->nullable();

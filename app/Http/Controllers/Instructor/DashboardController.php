@@ -55,8 +55,8 @@ class DashboardController extends Controller
         // Calculate earnings
         $earnings = Transaction::whereIn('course_id', $courses->pluck('id'))
             ->select(
-                DB::raw('SUM(amount) as total'),
-                DB::raw('SUM(CASE WHEN created_at >= DATE_TRUNC(\'month\', CURRENT_DATE) THEN amount ELSE 0 END) as month_to_date')
+                DB::raw('SUM(instructor_amount) as total'),
+                DB::raw('SUM(CASE WHEN created_at >= DATE_TRUNC(\'month\', CURRENT_DATE) THEN instructor_amount ELSE 0 END) as month_to_date')
             )
             ->first();
 
@@ -64,7 +64,7 @@ class DashboardController extends Controller
         $monthlyEarnings = Transaction::whereIn('course_id', $courses->pluck('id'))
             ->select(
                 DB::raw('DATE_TRUNC(\'month\', created_at) as month'),
-                DB::raw('SUM(amount) as total')
+                DB::raw('SUM(instructor_amount) as total')
             )
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
