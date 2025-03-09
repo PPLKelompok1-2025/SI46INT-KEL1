@@ -33,6 +33,12 @@ class Enrollment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function completedLessons()
+    {
+        return $this->belongsToMany(Lesson::class, 'lesson_completions', 'enrollment_id', 'lesson_id')
+            ->withTimestamps();
+    }
+
     public function isCompleted()
     {
         return $this->completed_at !== null;

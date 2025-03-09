@@ -15,6 +15,7 @@ use App\Http\Controllers\Instructor\EarningController;
 use App\Http\Controllers\Instructor\LessonController;
 use App\Http\Controllers\Instructor\QuizController as InstructorQuizController;
 use App\Http\Controllers\Instructor\QuestionController;
+use App\Http\Controllers\Instructor\StudentController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
@@ -107,6 +108,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
         Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
 
+        // Student management
+        Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/students/course/{course}', [StudentController::class, 'course'])->name('students.course');
+        Route::get('/students/{enrollment}', [StudentController::class, 'show'])->name('students.show');
+        Route::delete('/students/{enrollment}', [StudentController::class, 'removeStudent'])->name('students.remove');
+
         // Lesson management
         Route::resource('courses.lessons', LessonController::class);
 
@@ -128,7 +135,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Student routes
     Route::middleware(['role:student'])->prefix('student')->name('student.')->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
-
 
         // Course enrollment and learning
         Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
