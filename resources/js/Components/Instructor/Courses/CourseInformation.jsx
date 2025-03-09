@@ -6,6 +6,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
+import { formatCurrency } from '@/lib/utils';
 
 export default function CourseInformation({ course }) {
     return (
@@ -62,14 +63,7 @@ export default function CourseInformation({ course }) {
                         <h3 className="mb-1 text-sm font-medium text-muted-foreground">
                             Price
                         </h3>
-                        <p>
-                            ${course.price}
-                            {course.discount_price && (
-                                <span className="ml-2 text-sm text-muted-foreground">
-                                    (Discounted: ${course.discount_price})
-                                </span>
-                            )}
-                        </p>
+                        <p>{formatCurrency(course.price)}</p>
                     </div>
                     <div>
                         <h3 className="mb-1 text-sm font-medium text-muted-foreground">

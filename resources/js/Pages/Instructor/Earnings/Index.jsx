@@ -167,7 +167,6 @@ export default function Index({
                                         axisLine={false}
                                     />
                                     <YAxis
-                                        tickFormatter={(value) => `$${value}`}
                                         tickLine={false}
                                         axisLine={false}
                                         tickMargin={10}

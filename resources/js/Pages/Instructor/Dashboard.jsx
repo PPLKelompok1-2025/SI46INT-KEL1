@@ -10,6 +10,7 @@ import {
 } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import { BookOpen, DollarSign, PlusCircle, Star, Users } from 'lucide-react';
 
@@ -72,7 +73,7 @@ export default function Dashboard({
                                     Total Earnings
                                 </p>
                                 <h3 className="text-2xl font-bold">
-                                    {stats.totalEarnings}
+                                    {formatCurrency(stats.totalEarnings)}
                                 </h3>
                             </div>
                             <DollarSign className="h-8 w-8 text-primary" />

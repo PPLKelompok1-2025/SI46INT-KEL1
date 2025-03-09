@@ -51,7 +51,6 @@ class CourseFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'price' => 0,
-            'discount_price' => null,
         ]);
     }
 

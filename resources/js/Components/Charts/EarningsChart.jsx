@@ -23,6 +23,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from '@/Components/ui/chart';
+import { formatCurrency } from '@/lib/utils';
 
 export default function EarningsChart({ monthlyEarnings }) {
     // Calculate trend percentage (comparing last month with previous month)
@@ -78,7 +79,6 @@ export default function EarningsChart({ monthlyEarnings }) {
                                     axisLine={false}
                                 />
                                 <YAxis
-                                    tickFormatter={(value) => `$${value}`}
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={10}
@@ -88,7 +88,7 @@ export default function EarningsChart({ monthlyEarnings }) {
                                     content={
                                         <ChartTooltipContent
                                             formatter={(value) =>
-                                                `$${parseFloat(value).toFixed(2)}`
+                                                formatCurrency(value)
                                             }
                                         />
                                     }

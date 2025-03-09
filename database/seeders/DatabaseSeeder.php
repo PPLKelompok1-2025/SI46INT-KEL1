@@ -142,7 +142,7 @@ class DatabaseSeeder extends Seeder
                     Transaction::factory()->create([
                         'user_id' => $student->id,
                         'course_id' => $course->id,
-                        'amount' => $course->discount_price ?? $course->price,
+                        'amount' =>  $course->price,
                     ]);
                 }
             }

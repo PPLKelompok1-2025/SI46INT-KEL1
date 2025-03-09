@@ -6,6 +6,7 @@ import CourseStudents from '@/Components/Instructor/Courses/CourseStudents';
 import { Button } from '@/Components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
@@ -147,20 +148,9 @@ export default function Show({ course, stats }) {
                                         Price
                                     </div>
                                     <div className="flex items-center">
-                                        {course.discount_price ? (
-                                            <>
-                                                <span className="text-lg font-bold">
-                                                    ${course.discount_price}
-                                                </span>
-                                                <span className="ml-2 text-sm text-muted-foreground line-through">
-                                                    ${course.price}
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <span className="text-lg font-bold">
-                                                ${course.price}
-                                            </span>
-                                        )}
+                                        <span className="text-lg font-bold">
+                                            {formatCurrency(course.price)}
+                                        </span>
                                     </div>
                                 </div>
                                 <Button className="w-full" asChild>
@@ -211,7 +201,7 @@ export default function Show({ course, stats }) {
                                         Course Details
                                     </Link>
                                 </Button>
-                                {!course.is_published && (
+                                {!course.is_published ? (
                                     <Button
                                         className="w-full justify-start"
                                         asChild
@@ -221,10 +211,25 @@ export default function Show({ course, stats }) {
                                                 'instructor.courses.publish',
                                                 course.id,
                                             )}
-                                            method="post"
-                                            as="button"
+                                            method="patch"
                                         >
                                             Publish Course
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        variant="destructive"
+                                        className="w-full justify-start"
+                                        asChild
+                                    >
+                                        <Link
+                                            href={route(
+                                                'instructor.courses.publish',
+                                                course.id,
+                                            )}
+                                            method="patch"
+                                        >
+                                            Unpublish Course
                                         </Link>
                                     </Button>
                                 )}

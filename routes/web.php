@@ -95,7 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Course management
         Route::resource('courses', InstructorCourseController::class);
-        Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'publish'])->name('courses.publish');
+        Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
 
         // Lesson routes - nested under courses
         Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
