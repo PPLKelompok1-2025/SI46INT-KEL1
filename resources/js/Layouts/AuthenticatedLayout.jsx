@@ -73,11 +73,6 @@ export default function AuthenticatedLayout({ children }) {
                     icon: BookOpen,
                 },
                 {
-                    name: 'Lessons',
-                    href: '/instructor/lessons',
-                    icon: FileText,
-                },
-                {
                     name: 'Students',
                     href: '/instructor/students',
                     icon: GraduationCap,
@@ -158,6 +153,7 @@ export default function AuthenticatedLayout({ children }) {
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:bg-muted',
                                     )}
+                                    prefetch="hover"
                                 >
                                     <item.icon className="h-5 w-5" />
                                     {item.name}
@@ -190,7 +186,11 @@ export default function AuthenticatedLayout({ children }) {
             <div className="hidden border-r lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col">
                 <div className="flex h-full flex-col overflow-y-auto py-6">
                     <div className="px-6">
-                        <Link href="/" className="flex items-center">
+                        <Link
+                            href="/"
+                            className="flex items-center"
+                            prefetch="hover"
+                        >
                             <span className="text-xl font-bold">
                                 Coursepedia
                             </span>
@@ -208,6 +208,7 @@ export default function AuthenticatedLayout({ children }) {
                                             ? 'bg-primary text-primary-foreground'
                                             : 'text-muted-foreground hover:bg-muted',
                                     )}
+                                    prefetch="hover"
                                 >
                                     <item.icon className="h-5 w-5" />
                                     {item.name}
@@ -282,7 +283,10 @@ export default function AuthenticatedLayout({ children }) {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    <Link href={route('profile.edit')}>
+                                    <Link
+                                        href={route('profile.edit')}
+                                        prefetch="hover"
+                                    >
                                         Profile
                                     </Link>
                                 </DropdownMenuItem>

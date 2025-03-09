@@ -1,3 +1,5 @@
+import EarningsChart from '@/Components/Charts/EarningsChart';
+import EnrollmentChart from '@/Components/Charts/EnrollmentChart';
 import { Button } from '@/Components/ui/button';
 import {
     Card,
@@ -7,19 +9,19 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import InstructorLayout from '@/Layouts/InstructorLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { BookOpen, DollarSign, PlusCircle, Star, Users } from 'lucide-react';
 
 export default function Dashboard({
-    auth,
     stats,
     recentCourses,
     recentEnrollments,
     recentReviews,
+    charts,
 }) {
     return (
-        <InstructorLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="Instructor Dashboard" />
 
             <div className="space-y-4">
@@ -70,7 +72,7 @@ export default function Dashboard({
                                     Total Earnings
                                 </p>
                                 <h3 className="text-2xl font-bold">
-                                    ${stats.totalEarnings.toFixed(2)}
+                                    ${stats.totalEarnings}
                                 </h3>
                             </div>
                             <DollarSign className="h-8 w-8 text-primary" />
@@ -102,41 +104,13 @@ export default function Dashboard({
 
                     <TabsContent value="overview" className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Earnings Overview</CardTitle>
-                                    <CardDescription>
-                                        Monthly earnings for the current year
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="h-[300px]">
-                                        {/* This would be a chart component */}
-                                        <p className="text-center text-muted-foreground">
-                                            Earnings chart will be displayed
-                                            here
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <EarningsChart
+                                monthlyEarnings={charts.monthlyEarnings}
+                            />
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Enrollment Overview</CardTitle>
-                                    <CardDescription>
-                                        Monthly enrollments for the current year
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="h-[300px]">
-                                        {/* This would be a chart component */}
-                                        <p className="text-center text-muted-foreground">
-                                            Enrollment chart will be displayed
-                                            here
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <EnrollmentChart
+                                enrollmentsByCourse={charts.enrollmentsByCourse}
+                            />
                         </div>
 
                         <Card>
@@ -441,6 +415,6 @@ export default function Dashboard({
                     </TabsContent>
                 </Tabs>
             </div>
-        </InstructorLayout>
+        </AuthenticatedLayout>
     );
 }

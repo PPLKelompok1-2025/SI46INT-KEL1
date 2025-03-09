@@ -83,7 +83,7 @@ export default function Wishlist({ courses }) {
                                         <div className="flex items-center">
                                             <p className="text-lg font-bold">
                                                 {course.price > 0
-                                                    ? `$${course.price.toFixed(2)}`
+                                                    ? `$${course.price}`
                                                     : 'Free'}
                                             </p>
                                             {course.original_price >

@@ -6,7 +6,7 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import {
     BookOpen,
@@ -17,14 +17,13 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard({
-    auth,
     stats,
     recentTransactions,
     // recentUsers,
     // recentCourses,
 }) {
     return (
-        <AdminLayout auth={auth}>
+        <AuthenticatedLayout>
             <Head title="Admin Dashboard" />
 
             <div className="space-y-4">
@@ -236,6 +235,6 @@ export default function Dashboard({
                     </TabsContent>
                 </Tabs>
             </div>
-        </AdminLayout>
+        </AuthenticatedLayout>
     );
 }

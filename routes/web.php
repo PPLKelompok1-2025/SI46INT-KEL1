@@ -96,6 +96,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('courses', InstructorCourseController::class);
         Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'publish'])->name('courses.publish');
 
+        // Lesson routes - nested under courses
+        Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
+        Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
+        Route::get('lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
+        Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
+        Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
+        // Route::get('lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
+        Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
+        Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
+        Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
+
         // Lesson management
         Route::resource('courses.lessons', LessonController::class);
 

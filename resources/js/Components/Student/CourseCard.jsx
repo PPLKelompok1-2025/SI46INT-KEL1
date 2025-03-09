@@ -35,7 +35,7 @@ export default function CourseCard({ course, type }) {
                             : 'N/A'}
                     </span>
                     <span>•</span>
-                    <span className="ml-2">{course.instructor.name}</span>
+                    <span className="ml-2">{course.user.name}</span>
                 </CardDescription>
             </CardHeader>
             <CardContent>
