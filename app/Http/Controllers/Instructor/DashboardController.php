@@ -22,29 +22,24 @@ class DashboardController extends Controller
     {
         $instructor = Auth::user();
 
-        // Get instructor's courses with counts
         $courses = Course::where('user_id', $instructor->id)
             ->withCount(['lessons', 'enrollments', 'reviews'])
             ->get();
 
-        // Calculate total students (unique enrollments)
         $totalStudents = Enrollment::whereIn('course_id', $courses->pluck('id'))
             ->distinct('user_id')
             ->count('user_id');
 
-        // Get average rating across all courses
         $averageRating = Review::whereIn('course_id', $courses->pluck('id'))
             ->where('is_approved', true)
             ->avg('rating') ?? 0;
 
-        // Get recent enrollments
         $recentEnrollments = Enrollment::whereIn('course_id', $courses->pluck('id'))
             ->with(['user', 'course'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        // Get recent reviews
         $recentReviews = Review::whereIn('course_id', $courses->pluck('id'))
             ->with(['user', 'course'])
             ->where('is_approved', true)
@@ -52,7 +47,6 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Calculate earnings
         $earnings = Transaction::whereIn('course_id', $courses->pluck('id'))
             ->select(
                 DB::raw('SUM(instructor_amount) as total'),
@@ -60,7 +54,6 @@ class DashboardController extends Controller
             )
             ->first();
 
-        // Get earnings by month for the chart (last 6 months)
         $monthlyEarnings = Transaction::whereIn('course_id', $courses->pluck('id'))
             ->select(
                 DB::raw('DATE_TRUNC(\'month\', created_at) as month'),
@@ -77,13 +70,11 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get recent courses (newly added)
         $recentCourses = Course::where('user_id', $instructor->id)
             ->orderBy('updated_at', 'desc')
             ->limit(5)
             ->get();
 
-        // Get enrollments by course for the chart
         $enrollmentsByCourse = Enrollment::whereIn('course_id', $courses->pluck('id'))
             ->select('course_id', DB::raw('count(*) as total'))
             ->groupBy('course_id')
@@ -96,17 +87,14 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get popular courses
         $popularCourses = $courses->sortByDesc('enrollments_count')->take(5)->values();
 
-        // Get courses that need attention (no lessons, low rating, etc.)
         $coursesNeedingAttention = $courses->filter(function ($course) {
             return $course->lessons_count === 0 ||
                    ($course->reviews_count > 0 && $course->reviews->avg('rating') < 3) ||
                    !$course->is_published;
         })->values();
 
-        // Get pending assignments that need grading
         $pendingAssignments = DB::table('assignment_submissions')
             ->join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
             ->join('lessons', 'assignments.lesson_id', '=', 'lessons.id')
@@ -137,7 +125,7 @@ class DashboardController extends Controller
             ],
             'recentEnrollments' => $recentEnrollments,
             'recentReviews' => $recentReviews,
-            'recentCourses' => $recentCourses, // Added this line
+            'recentCourses' => $recentCourses,
             'popularCourses' => $popularCourses,
             'coursesNeedingAttention' => $coursesNeedingAttention,
             'pendingAssignments' => $pendingAssignments,
