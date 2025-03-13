@@ -121,7 +121,6 @@ class CourseController extends Controller
      */
     public function show(Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to view this course');
@@ -133,15 +132,13 @@ class CourseController extends Controller
 
         $course->loadCount(['enrollments', 'reviews', 'lessons']);
 
-        // Get enrollment statistics
-        // PostgreSQL version of the date calculation
         $enrollmentStats = Enrollment::where('course_id', $course->id)
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN created_at >= NOW() - INTERVAL \'30 days\' THEN 1 ELSE 0 END) as last_30_days')
             ->first();
 
-        // Load reviews to use the average_rating accessor
         $course->load(['reviews' => function($query) {
-            $query->where('is_approved', true);
+            $query->where('is_approved', true)
+                  ->with('user');
         }]);
 
         return Inertia::render('Instructor/Courses/Show', [
