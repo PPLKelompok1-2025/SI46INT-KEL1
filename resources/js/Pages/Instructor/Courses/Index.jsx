@@ -143,21 +143,12 @@ export default function Index({ auth, courses }) {
                                                 <div className="flex items-center justify-center">
                                                     <Star className="mr-1 h-4 w-4 text-yellow-500" />
                                                     <span>
-                                                        {/* {course.reviews_count >
+                                                        {course.reviews_count >
                                                         0
-                                                            ? (
-                                                                  course.reviews.reduce(
-                                                                      (
-                                                                          acc,
-                                                                          review,
-                                                                      ) =>
-                                                                          acc +
-                                                                          review.rating,
-                                                                      0,
-                                                                  ) /
-                                                                  course.reviews_count
+                                                            ? Number(
+                                                                  course.average_rating,
                                                               ).toFixed(1)
-                                                            : 'N/A'} */}
+                                                            : 'N/A'}
                                                     </span>
                                                 </div>
                                             </TableCell>

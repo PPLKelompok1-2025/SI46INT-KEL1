@@ -1,6 +1,8 @@
 'use client';
 
-import { Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { TrendingUp } from 'lucide-react';
+import * as React from 'react';
+import { Label, Pie, PieChart } from 'recharts';
 
 import {
     Card,
@@ -43,7 +45,7 @@ export default function EnrollmentChart({ enrollmentsByCourse }) {
         },
         ...Object.fromEntries(
             enrollmentsByCourse.map((item, index) => [
-                `course-${index + 1}`,
+                item.course.toLowerCase().replace(/\s+/g, '-'),
                 {
                     label: item.course,
                     color: chartColors[index % chartColors.length],
@@ -53,52 +55,81 @@ export default function EnrollmentChart({ enrollmentsByCourse }) {
     };
 
     // Calculate total enrollments
-    const totalEnrollments = enrollmentsByCourse.reduce(
-        (sum, item) => sum + item.total,
-        0,
-    );
+    const totalEnrollments = React.useMemo(() => {
+        return enrollmentsByCourse.reduce((sum, item) => sum + item.total, 0);
+    }, [enrollmentsByCourse]);
 
     return (
         <Card className="flex flex-col">
-            <CardHeader>
+            <CardHeader className="items-center pb-0">
                 <CardTitle>Enrollment Distribution</CardTitle>
                 <CardDescription>Enrollments by course</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1">
+            <CardContent className="flex-1 pb-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto aspect-square max-h-[250px] [&_.recharts-pie-label-text]:fill-foreground"
+                    className="mx-auto aspect-square max-h-[350px]"
                 >
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <ChartTooltip
-                                content={
-                                    <ChartTooltipContent
-                                        formatter={(value) =>
-                                            `${value} students`
-                                        }
-                                    />
-                                }
+                    <PieChart>
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Pie
+                            data={chartData}
+                            dataKey="enrollments"
+                            nameKey="course"
+                            innerRadius={80}
+                            strokeWidth={5}
+                        >
+                            <Label
+                                content={({ viewBox }) => {
+                                    if (
+                                        viewBox &&
+                                        'cx' in viewBox &&
+                                        'cy' in viewBox
+                                    ) {
+                                        return (
+                                            <text
+                                                x={viewBox.cx}
+                                                y={viewBox.cy}
+                                                textAnchor="middle"
+                                                dominantBaseline="middle"
+                                            >
+                                                <tspan
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    className="fill-foreground text-3xl font-bold"
+                                                >
+                                                    {totalEnrollments.toLocaleString()}
+                                                </tspan>
+                                                <tspan
+                                                    x={viewBox.cx}
+                                                    y={(viewBox.cy || 0) + 24}
+                                                    className="fill-muted-foreground"
+                                                >
+                                                    Enrollments
+                                                </tspan>
+                                            </text>
+                                        );
+                                    }
+                                }}
                             />
-                            <Pie
-                                data={chartData}
-                                dataKey="enrollments"
-                                nameKey="course"
-                                label={({ name, percent }) =>
-                                    `${name}: ${(percent * 100).toFixed(0)}%`
-                                }
-                                labelLine={false}
-                                outerRadius={80}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+                        </Pie>
+                    </PieChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="text-sm">
-                <div className="w-full text-center text-muted-foreground">
+            <CardFooter className="flex-col gap-2 text-sm">
+                <div className="leading-none text-muted-foreground">
                     Total of {totalEnrollments} enrollments across{' '}
                     {enrollmentsByCourse.length} courses
                 </div>
+                {enrollmentsByCourse.length > 0 && (
+                    <div className="flex items-center gap-2 font-medium leading-none">
+                        Most popular: {enrollmentsByCourse[0].course}
+                        <TrendingUp className="h-4 w-4" />
+                    </div>
+                )}
             </CardFooter>
         </Card>
     );

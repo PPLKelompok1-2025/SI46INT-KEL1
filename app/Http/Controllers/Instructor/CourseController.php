@@ -24,15 +24,20 @@ class CourseController extends Controller
     {
         $instructor = Auth::user();
 
-        $courses = Course::where('user_id', $instructor->id)
-            ->withCount(['lessons', 'enrollments', 'reviews'])
-            ->with('category')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    $courses = Course::where('user_id', $instructor->id)
+        ->withCount(['lessons', 'enrollments', 'reviews'])
+        ->with('category')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        return Inertia::render('Instructor/Courses/Index', [
-            'courses' => $courses
-        ]);
+    $courses->each(function ($course) {
+        $course->average_rating = $course->getAverageRatingAttribute();
+    });
+
+
+    return Inertia::render('Instructor/Courses/Index', [
+        'courses' => $courses
+    ]);
     }
 
     /**
@@ -128,22 +133,23 @@ class CourseController extends Controller
 
         $course->loadCount(['enrollments', 'reviews', 'lessons']);
 
-        // Get enrollment and review statistics
+        // Get enrollment statistics
         // PostgreSQL version of the date calculation
         $enrollmentStats = Enrollment::where('course_id', $course->id)
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN created_at >= NOW() - INTERVAL \'30 days\' THEN 1 ELSE 0 END) as last_30_days')
             ->first();
 
-        $averageRating = Review::where('course_id', $course->id)
-            ->where('is_approved', true)
-            ->avg('rating') ?? 0;
+        // Load reviews to use the average_rating accessor
+        $course->load(['reviews' => function($query) {
+            $query->where('is_approved', true);
+        }]);
 
         return Inertia::render('Instructor/Courses/Show', [
             'course' => $course,
             'stats' => [
                 'totalEnrollments' => $enrollmentStats->total ?? 0,
                 'recentEnrollments' => $enrollmentStats->last_30_days ?? 0,
-                'averageRating' => round($averageRating, 1),
+                'averageRating' => round($course->average_rating, 1),
                 'lessons_count' => $course->lessons_count,
                 'enrollments_count' => $course->enrollments_count,
             ]
