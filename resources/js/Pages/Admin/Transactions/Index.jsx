@@ -524,7 +524,20 @@ export default function Index({
                                         link.active ? 'default' : 'outline'
                                     }
                                     disabled={!link.url}
-                                    onClick={() => router.visit(link.url)}
+                                    onClick={() =>
+                                        router.visit(link.url, {
+                                            data: {
+                                                search: searchTerm,
+                                                status,
+                                                type,
+                                                date_range: dateRange,
+                                                sort_field: sortField,
+                                                sort_direction: sortDirection,
+                                            },
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        })
+                                    }
                                     size="sm"
                                     dangerouslySetInnerHTML={{
                                         __html: link.label,
