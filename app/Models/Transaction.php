@@ -19,6 +19,7 @@ class Transaction extends Model
         'payment_method',
         'status',
         'paid_at',
+        'type',
     ];
 
     protected $casts = [
@@ -33,5 +34,27 @@ class Transaction extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Get the transaction type based on available data.
+     *
+     * @return string
+     */
+    public function getTypeAttribute()
+    {
+        if (isset($this->attributes['type'])) {
+            return $this->attributes['type'];
+        }
+
+        if ($this->status === 'refunded') {
+            return 'refund';
+        }
+
+        if ($this->instructor_amount > 0 && empty($this->course_id)) {
+            return 'payout';
+        }
+
+        return 'purchase';
     }
 }

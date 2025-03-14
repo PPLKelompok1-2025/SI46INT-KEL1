@@ -70,6 +70,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // User management
         Route::resource('users', UserController::class);
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
 
         // Course management
         Route::resource('courses', AdminCourseController::class);

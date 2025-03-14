@@ -28,7 +28,7 @@ import { Head, Link } from '@inertiajs/react';
 import { BookOpen, Edit, Eye, PlusCircle, Star, Trash } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Index({ auth, courses }) {
+export default function Index({ courses }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
 
@@ -38,7 +38,7 @@ export default function Index({ auth, courses }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="My Courses" />
 
             <div className="space-y-6">
