@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('categories', AdminCategoryController::class);
 
         // Transaction management
+        Route::get('/transactions/export', [AdminTransactionController::class, 'export'])->name('transactions.export');
         Route::resource('transactions', AdminTransactionController::class)->only(['index', 'show']);
         Route::post('/transactions/{transaction}/refund', [AdminTransactionController::class, 'refund'])->name('transactions.refund');
 

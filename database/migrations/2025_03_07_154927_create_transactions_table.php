@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('payment_method');
             $table->string('status'); // completed, pending, failed, refunded
             $table->timestamp('paid_at')->nullable();
+            $table->string('type'); // purchase, refund, payout
             $table->timestamps();
         });
     }

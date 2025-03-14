@@ -28,6 +28,7 @@ class TransactionFactory extends Factory
             'instructor_amount' => $instructorAmount,
             'currency' => 'IDR',
             'payment_method' => fake()->randomElement(['credit_card', 'paypal', 'stripe']),
+            'type' => fake()->randomElement(['purchase', 'refund', 'payout']),
             'status' => 'completed',
             'paid_at' => $paidAt,
             'created_at' => $paidAt,
