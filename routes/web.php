@@ -48,8 +48,12 @@ Route::get('/', function () {
 // Public routes
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
+
+// Categories routes
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+
+// Search routes
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // Authentication routes (already provided by Breeze)
