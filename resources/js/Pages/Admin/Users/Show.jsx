@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     BookOpen,
@@ -30,8 +30,9 @@ import {
     User as UserIcon,
     Users,
 } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
 
-export default function Show({ user }) {
+export default function Show({ user, tab = 'overview' }) {
     const getRoleBadgeVariant = (role) => {
         switch (role) {
             case 'admin':
@@ -43,6 +44,51 @@ export default function Show({ user }) {
             default:
                 return 'secondary';
         }
+    };
+
+    const handleTabChange = useCallback(
+        (value) => {
+            router.get(
+                route('admin.users.show', user.id),
+                { tab: value },
+                { preserveState: true },
+            );
+        },
+        [user.id],
+    );
+
+    useEffect(() => {
+        // Ensure tab state is consistent with URL param
+        if (
+            tab !== 'overview' &&
+            tab !== 'courses' &&
+            tab !== 'enrollments' &&
+            tab !== 'reviews' &&
+            tab !== 'transactions'
+        ) {
+            handleTabChange('overview');
+        }
+    }, [tab, handleTabChange]);
+
+    const renderPagination = (links) => {
+        if (!links || links.length <= 3) return null;
+
+        return (
+            <div className="mt-4 flex items-center justify-end space-x-2">
+                {links.map((link, i) => (
+                    <Button
+                        key={i}
+                        variant={link.active ? 'default' : 'outline'}
+                        disabled={!link.url}
+                        onClick={() => router.visit(link.url)}
+                        size="sm"
+                        dangerouslySetInnerHTML={{
+                            __html: link.label,
+                        }}
+                    ></Button>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -206,7 +252,10 @@ export default function Show({ user }) {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Tabs defaultValue="overview">
+                            <Tabs
+                                defaultValue={tab}
+                                onValueChange={handleTabChange}
+                            >
                                 <TabsList className="mb-4 w-full">
                                     <TabsTrigger value="overview">
                                         Overview
@@ -304,74 +353,89 @@ export default function Show({ user }) {
                                     </div>
                                 </TabsContent>
 
-                                {/* Other tabs would typically fetch data from the backend when selected */}
+                                {/* Courses Tab */}
                                 <TabsContent value="courses">
-                                    {user.courses && user.courses.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Title</TableHead>
-                                                    <TableHead>
-                                                        Students
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Rating
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Status
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Created
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {user.courses.map((course) => (
-                                                    <TableRow key={course.id}>
-                                                        <TableCell>
-                                                            {course.title}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {
-                                                                course.enrollments_count
-                                                            }
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {course.average_rating ? (
-                                                                <div className="flex items-center">
-                                                                    <Star className="mr-1 h-4 w-4 text-yellow-500" />
-                                                                    {Number(
-                                                                        course.average_rating,
-                                                                    ).toFixed(
-                                                                        1,
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                'N/A'
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Badge
-                                                                variant={
-                                                                    course.is_published
-                                                                        ? 'success'
-                                                                        : 'secondary'
-                                                                }
-                                                            >
-                                                                {course.is_published
-                                                                    ? 'Published'
-                                                                    : 'Draft'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {new Date(
-                                                                course.created_at,
-                                                            ).toLocaleDateString()}
-                                                        </TableCell>
+                                    {user.courses &&
+                                    user.courses.data &&
+                                    user.courses.data.length > 0 ? (
+                                        <>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            Title
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Students
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Rating
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Status
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Created
+                                                        </TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {user.courses.data.map(
+                                                        (course) => (
+                                                            <TableRow
+                                                                key={course.id}
+                                                            >
+                                                                <TableCell>
+                                                                    {
+                                                                        course.title
+                                                                    }
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {
+                                                                        course.enrollments_count
+                                                                    }
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {course.average_rating ? (
+                                                                        <div className="flex items-center">
+                                                                            <Star className="mr-1 h-4 w-4 text-yellow-500" />
+                                                                            {Number(
+                                                                                course.average_rating,
+                                                                            ).toFixed(
+                                                                                1,
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        'N/A'
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge
+                                                                        variant={
+                                                                            course.is_published
+                                                                                ? 'success'
+                                                                                : 'secondary'
+                                                                        }
+                                                                    >
+                                                                        {course.is_published
+                                                                            ? 'Published'
+                                                                            : 'Draft'}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {new Date(
+                                                                        course.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ),
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                            {renderPagination(
+                                                user.courses.links,
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center p-8 text-center">
                                             <BookOpen className="mb-4 h-12 w-12 text-muted-foreground" />
@@ -386,67 +450,76 @@ export default function Show({ user }) {
                                     )}
                                 </TabsContent>
 
+                                {/* Enrollments Tab */}
                                 <TabsContent value="enrollments">
                                     {user.enrollments &&
-                                    user.enrollments.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>
-                                                        Course
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Enrolled On
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Progress
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Status
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {user.enrollments.map(
-                                                    (enrollment) => (
-                                                        <TableRow
-                                                            key={enrollment.id}
-                                                        >
-                                                            <TableCell>
-                                                                {enrollment.course
-                                                                    ? enrollment
-                                                                          .course
-                                                                          .title
-                                                                    : 'N/A'}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {new Date(
-                                                                    enrollment.created_at,
-                                                                ).toLocaleDateString()}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {enrollment.progress_percentage
-                                                                    ? `${Math.floor(enrollment.progress_percentage)}%`
-                                                                    : '0%'}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge
-                                                                    variant={
-                                                                        enrollment.completed_at
-                                                                            ? 'success'
-                                                                            : 'secondary'
-                                                                    }
-                                                                >
-                                                                    {enrollment.completed_at
-                                                                        ? 'Completed'
-                                                                        : 'In Progress'}
-                                                                </Badge>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ),
-                                                )}
-                                            </TableBody>
-                                        </Table>
+                                    user.enrollments.data &&
+                                    user.enrollments.data.length > 0 ? (
+                                        <>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            Course
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Enrolled On
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Progress
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Status
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {user.enrollments.data.map(
+                                                        (enrollment) => (
+                                                            <TableRow
+                                                                key={
+                                                                    enrollment.id
+                                                                }
+                                                            >
+                                                                <TableCell>
+                                                                    {enrollment.course
+                                                                        ? enrollment
+                                                                              .course
+                                                                              .title
+                                                                        : 'N/A'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {new Date(
+                                                                        enrollment.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {enrollment.progress_percentage
+                                                                        ? `${Math.floor(enrollment.progress_percentage)}%`
+                                                                        : '0%'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge
+                                                                        variant={
+                                                                            enrollment.completed_at
+                                                                                ? 'success'
+                                                                                : 'secondary'
+                                                                        }
+                                                                    >
+                                                                        {enrollment.completed_at
+                                                                            ? 'Completed'
+                                                                            : 'In Progress'}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ),
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                            {renderPagination(
+                                                user.enrollments.links,
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center p-8 text-center">
                                             <Users className="mb-4 h-12 w-12 text-muted-foreground" />
@@ -461,53 +534,70 @@ export default function Show({ user }) {
                                     )}
                                 </TabsContent>
 
+                                {/* Reviews Tab */}
                                 <TabsContent value="reviews">
-                                    {user.reviews && user.reviews.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>
-                                                        Course
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Rating
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Comment
-                                                    </TableHead>
-                                                    <TableHead>Date</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {user.reviews.map((review) => (
-                                                    <TableRow key={review.id}>
-                                                        <TableCell>
-                                                            {review.course
-                                                                ? review.course
-                                                                      .title
-                                                                : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center">
-                                                                <Star className="mr-1 h-4 w-4 text-yellow-500" />
-                                                                {review.rating}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div className="max-w-xs truncate">
-                                                                {review.comment ||
-                                                                    'No comment'}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {new Date(
-                                                                review.created_at,
-                                                            ).toLocaleDateString()}
-                                                        </TableCell>
+                                    {user.reviews &&
+                                    user.reviews.data &&
+                                    user.reviews.data.length > 0 ? (
+                                        <>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            Course
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Rating
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Comment
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Date
+                                                        </TableHead>
                                                     </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {user.reviews.data.map(
+                                                        (review) => (
+                                                            <TableRow
+                                                                key={review.id}
+                                                            >
+                                                                <TableCell>
+                                                                    {review.course
+                                                                        ? review
+                                                                              .course
+                                                                              .title
+                                                                        : 'N/A'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="flex items-center">
+                                                                        <Star className="mr-1 h-4 w-4 text-yellow-500" />
+                                                                        {
+                                                                            review.rating
+                                                                        }
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="max-w-xs truncate">
+                                                                        {review.comment ||
+                                                                            'No comment'}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {new Date(
+                                                                        review.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ),
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                            {renderPagination(
+                                                user.reviews.links,
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center p-8 text-center">
                                             <Star className="mb-4 h-12 w-12 text-muted-foreground" />
@@ -522,89 +612,106 @@ export default function Show({ user }) {
                                     )}
                                 </TabsContent>
 
+                                {/* Transactions Tab */}
                                 <TabsContent value="transactions">
                                     {user.transactions &&
-                                    user.transactions.length > 0 ? (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>ID</TableHead>
-                                                    <TableHead>
-                                                        Amount
-                                                    </TableHead>
-                                                    <TableHead>Type</TableHead>
-                                                    <TableHead>
-                                                        Status
-                                                    </TableHead>
-                                                    <TableHead>Date</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {user.transactions.map(
-                                                    (transaction) => (
-                                                        <TableRow
-                                                            key={transaction.id}
-                                                        >
-                                                            <TableCell>
-                                                                #
-                                                                {transaction.id}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {formatCurrency(
-                                                                    parseFloat(
-                                                                        transaction.amount,
-                                                                    ).toFixed(
-                                                                        2,
-                                                                    ),
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {transaction.type
-                                                                    ? transaction.type
-                                                                          .charAt(
-                                                                              0,
-                                                                          )
-                                                                          .toUpperCase() +
-                                                                      transaction.type.slice(
-                                                                          1,
-                                                                      )
-                                                                    : 'Purchase'}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Badge
-                                                                    variant={
-                                                                        transaction.status ===
-                                                                        'completed'
-                                                                            ? 'success'
-                                                                            : transaction.status ===
-                                                                                'pending'
-                                                                              ? 'secondary'
-                                                                              : transaction.status ===
-                                                                                  'failed'
-                                                                                ? 'destructive'
-                                                                                : 'outline'
+                                    user.transactions.data &&
+                                    user.transactions.data.length > 0 ? (
+                                        <>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            ID
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Amount
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Type
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Status
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Date
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {user.transactions.data.map(
+                                                        (transaction) => (
+                                                            <TableRow
+                                                                key={
+                                                                    transaction.id
+                                                                }
+                                                            >
+                                                                <TableCell>
+                                                                    #
+                                                                    {
+                                                                        transaction.id
                                                                     }
-                                                                >
-                                                                    {transaction.status
-                                                                        .charAt(
-                                                                            0,
-                                                                        )
-                                                                        .toUpperCase() +
-                                                                        transaction.status.slice(
-                                                                            1,
-                                                                        )}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {new Date(
-                                                                    transaction.created_at,
-                                                                ).toLocaleDateString()}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ),
-                                                )}
-                                            </TableBody>
-                                        </Table>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {formatCurrency(
+                                                                        parseFloat(
+                                                                            transaction.amount,
+                                                                        ).toFixed(
+                                                                            2,
+                                                                        ),
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {transaction.type
+                                                                        ? transaction.type
+                                                                              .charAt(
+                                                                                  0,
+                                                                              )
+                                                                              .toUpperCase() +
+                                                                          transaction.type.slice(
+                                                                              1,
+                                                                          )
+                                                                        : 'Purchase'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Badge
+                                                                        variant={
+                                                                            transaction.status ===
+                                                                            'completed'
+                                                                                ? 'success'
+                                                                                : transaction.status ===
+                                                                                    'pending'
+                                                                                  ? 'secondary'
+                                                                                  : transaction.status ===
+                                                                                      'failed'
+                                                                                    ? 'destructive'
+                                                                                    : 'outline'
+                                                                        }
+                                                                    >
+                                                                        {transaction.status
+                                                                            .charAt(
+                                                                                0,
+                                                                            )
+                                                                            .toUpperCase() +
+                                                                            transaction.status.slice(
+                                                                                1,
+                                                                            )}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {new Date(
+                                                                        transaction.created_at,
+                                                                    ).toLocaleDateString()}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ),
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                            {renderPagination(
+                                                user.transactions.links,
+                                            )}
+                                        </>
                                     ) : (
                                         <div className="flex flex-col items-center justify-center p-8 text-center">
                                             <CreditCard className="mb-4 h-12 w-12 text-muted-foreground" />

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -85,14 +86,19 @@ class UserController extends Controller
 
         $tab = $request->input('tab', 'overview');
 
-        $relations = ['courses' => function ($query) {
-            $query->withCount('enrollments')
-                  ->with('category')
-                  ->withAvg('reviews', 'rating')
-                  ->latest();
-        }];
+        if ($tab === 'courses' && $user->role === 'instructor') {
+            $courses = $user->courses()
+                ->withCount('enrollments')
+                ->with('category')
+                ->withAvg('reviews', 'rating')
+                ->latest()
+                ->paginate(10)
+                ->withQueryString();
 
-        if ($tab === 'enrollments') {
+            $user->setRelation('courses', $courses);
+        }
+
+        if ($tab === 'enrollments' && ($user->role === 'student' || $user->role === 'instructor')) {
             $enrollments = $user->enrollments()
                 ->with('course')
                 ->latest()
@@ -121,12 +127,10 @@ class UserController extends Controller
             $user->setRelation('transactions', $transactions);
         }
 
-        $user->load($relations);
-
-        if ($user->courses) {
+        if ($tab === 'courses' && isset($user->courses) && $user->courses->count() > 0) {
             foreach ($user->courses as $course) {
                 if ($course->reviews_avg_rating) {
-                    $course->average_rating = $course->reviews_avg_rating;
+                    $course->setAttribute('average_rating', $course->reviews_avg_rating);
                 }
             }
         }
@@ -182,7 +186,7 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->getKey() === Auth::id()) {
             return redirect()->route('admin.users.index')->with('error', 'You cannot delete your own account.');
         }
 
