@@ -266,6 +266,7 @@ export default function AuthenticatedLayout({ children }) {
                                                     ? `/storage/${user.profile_photo_path}`
                                                     : null
                                             }
+                                            className="object-cover"
                                             alt={user.name}
                                         />
                                         <AvatarFallback>

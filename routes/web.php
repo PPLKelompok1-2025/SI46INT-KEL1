@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Analytics routes
+        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
         // User management
         Route::resource('users', UserController::class);

@@ -94,6 +94,7 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
                                                         auth.user
                                                             .profile_photo_path
                                                 }
+                                                className="object-cover"
                                                 alt={auth.user.name}
                                             />
                                             <AvatarFallback>
