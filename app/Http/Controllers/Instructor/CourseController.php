@@ -28,12 +28,11 @@ class CourseController extends Controller
         ->withCount(['lessons', 'enrollments', 'reviews'])
         ->with('category')
         ->orderBy('created_at', 'desc')
-        ->get();
+        ->paginate(10);
 
     $courses->each(function ($course) {
         $course->average_rating = $course->getAverageRatingAttribute();
     });
-
 
     return Inertia::render('Instructor/Courses/Index', [
         'courses' => $courses

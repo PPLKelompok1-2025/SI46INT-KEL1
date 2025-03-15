@@ -6,7 +6,15 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
-import { Pagination } from '@/Components/ui/pagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/Components/ui/pagination';
 import {
     Table,
     TableBody,
@@ -16,7 +24,7 @@ import {
     TableRow,
 } from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Calendar, Search, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -42,7 +50,7 @@ export default function Index({ enrollments }) {
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold">Students</h1>
+                    <h1 className="text-3xl font-bold">Students</h1>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <input
@@ -164,7 +172,81 @@ export default function Index({ enrollments }) {
                         </Table>
 
                         <div className="mt-4">
-                            <Pagination links={enrollments.links} />
+                            <Pagination className="justify-end">
+                                <PaginationContent>
+                                    {enrollments.links.map((link, i) => {
+                                        if (!link.url && link.label === '...') {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationEllipsis />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        if (link.label.includes('Previous')) {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationPrevious
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                            )
+                                                        }
+                                                        disabled={!link.url}
+                                                        className={
+                                                            !link.url
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }
+                                                    />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        if (link.label.includes('Next')) {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationNext
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                            )
+                                                        }
+                                                        disabled={!link.url}
+                                                        className={
+                                                            !link.url
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }
+                                                    />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        return (
+                                            <PaginationItem key={i}>
+                                                <PaginationLink
+                                                    onClick={() =>
+                                                        link.url &&
+                                                        router.visit(link.url)
+                                                    }
+                                                    isActive={link.active}
+                                                    disabled={!link.url}
+                                                    className={
+                                                        !link.url
+                                                            ? 'pointer-events-none opacity-50'
+                                                            : 'cursor-pointer'
+                                                    }
+                                                >
+                                                    {link.label}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        );
+                                    })}
+                                </PaginationContent>
+                            </Pagination>
                         </div>
                     </CardContent>
                 </Card>

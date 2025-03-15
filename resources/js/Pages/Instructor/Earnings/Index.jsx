@@ -73,9 +73,7 @@ export default function Index({
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold">
-                        Earnings Dashboard
-                    </h1>
+                    <h1 className="text-3xl font-bold">Earnings Dashboard</h1>
                     <Button asChild>
                         <Link href={route('instructor.earnings.withdraw')}>
                             <Wallet className="mr-2 h-4 w-4" /> Request

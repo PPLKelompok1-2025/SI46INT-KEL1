@@ -16,6 +16,15 @@ import {
     DialogTitle,
 } from '@/Components/ui/dialog';
 import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/Components/ui/pagination';
+import {
     Table,
     TableBody,
     TableCell,
@@ -102,7 +111,7 @@ export default function Index({ courses }) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {courses.map((course) => (
+                                    {courses.data.map((course) => (
                                         <TableRow key={course.id}>
                                             <TableCell>
                                                 <div className="flex items-center space-x-3">
@@ -216,6 +225,91 @@ export default function Index({ courses }) {
                                     ))}
                                 </TableBody>
                             </Table>
+
+                            <div className="mt-4">
+                                <Pagination className="justify-end">
+                                    <PaginationContent>
+                                        {courses.links.map((link, i) => {
+                                            if (
+                                                !link.url &&
+                                                link.label === '...'
+                                            ) {
+                                                return (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationEllipsis />
+                                                    </PaginationItem>
+                                                );
+                                            }
+
+                                            if (
+                                                link.label.includes('Previous')
+                                            ) {
+                                                return (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationPrevious
+                                                            onClick={() =>
+                                                                link.url &&
+                                                                router.visit(
+                                                                    link.url,
+                                                                )
+                                                            }
+                                                            disabled={!link.url}
+                                                            className={
+                                                                !link.url
+                                                                    ? 'pointer-events-none opacity-50'
+                                                                    : 'cursor-pointer'
+                                                            }
+                                                        />
+                                                    </PaginationItem>
+                                                );
+                                            }
+
+                                            if (link.label.includes('Next')) {
+                                                return (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationNext
+                                                            onClick={() =>
+                                                                link.url &&
+                                                                router.visit(
+                                                                    link.url,
+                                                                )
+                                                            }
+                                                            disabled={!link.url}
+                                                            className={
+                                                                !link.url
+                                                                    ? 'pointer-events-none opacity-50'
+                                                                    : 'cursor-pointer'
+                                                            }
+                                                        />
+                                                    </PaginationItem>
+                                                );
+                                            }
+
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationLink
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                            )
+                                                        }
+                                                        isActive={link.active}
+                                                        disabled={!link.url}
+                                                        className={
+                                                            !link.url
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }
+                                                    >
+                                                        {link.label}
+                                                    </PaginationLink>
+                                                </PaginationItem>
+                                            );
+                                        })}
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
