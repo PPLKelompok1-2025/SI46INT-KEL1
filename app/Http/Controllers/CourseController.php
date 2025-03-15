@@ -93,7 +93,7 @@ class CourseController extends Controller
      * @param  string  $slug
      * @return \Inertia\Response
      */
-    public function show($slug)
+    public function show($slug, Request $request)
     {
         $course = Course::where('slug', $slug)
             ->where('is_published', true)
@@ -109,9 +109,7 @@ class CourseController extends Controller
             ->withCount(['lessons', 'enrollments', 'reviews'])
             ->firstOrFail();
 
-        $course->average_rating = $course->reviews()
-            ->where('is_approved', true)
-            ->avg('rating') ?? 0;
+        $course->append('average_rating');
 
         $reviews = $course->reviews()
             ->where('is_approved', true)
@@ -128,10 +126,13 @@ class CourseController extends Controller
             ->take(3)
             ->get();
 
+        $activeTab = $request->input('tab', 'overview');
+
         return Inertia::render('Courses/Show', [
             'course' => $course,
             'reviews' => $reviews,
             'similarCourses' => $similarCourses,
+            'activeTab' => $activeTab,
         ]);
     }
 }

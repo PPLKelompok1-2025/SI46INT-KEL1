@@ -6,10 +6,37 @@ import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import { BookOpen, Clock, Star, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export default function Show({ course, reviews, similarCourses, auth }) {
-    const [activeTab, setActiveTab] = useState('overview');
+export default function Show({
+    course,
+    reviews,
+    similarCourses,
+    auth,
+    activeTab: initialActiveTab,
+}) {
+    const [activeTab, setActiveTab] = useState(initialActiveTab || 'overview');
+
+    const handleTabChange = (value) => {
+        setActiveTab(value);
+
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('tab', value);
+        window.history.pushState({}, '', currentUrl.toString());
+    };
+
+    useEffect(() => {
+        const handlePopState = () => {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            if (tabParam) {
+                setActiveTab(tabParam);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
     const renderStarRating = (rating) => {
         const roundedRating = Math.round(Number(rating));
@@ -80,7 +107,7 @@ export default function Show({ course, reviews, similarCourses, auth }) {
 
                     <Tabs
                         value={activeTab}
-                        onValueChange={setActiveTab}
+                        onValueChange={handleTabChange}
                         className="w-full"
                     >
                         <TabsList className="grid w-full grid-cols-3">

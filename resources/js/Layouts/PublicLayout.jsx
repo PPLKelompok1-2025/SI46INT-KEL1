@@ -1,7 +1,10 @@
 import { Button } from '@/Components/ui/button';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 
 export default function PublicLayout({ children, title }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
+
     return (
         <div className="flex min-h-screen flex-col bg-background">
             <header className="border-b bg-background py-4">
@@ -10,18 +13,35 @@ export default function PublicLayout({ children, title }) {
                         <span className="text-xl font-bold">Coursepedia</span>
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link
-                            href={route('login')}
-                            className="text-sm text-muted-foreground hover:text-foreground"
-                            prefetch="hover"
-                        >
-                            Log in
-                        </Link>
-                        <Button asChild size="sm">
-                            <Link href={route('register')} prefetch="hover">
-                                Sign up
-                            </Link>
-                        </Button>
+                        {user ? (
+                            <Button asChild>
+                                <Link
+                                    href={route('logout')}
+                                    prefetch="hover"
+                                    method="post"
+                                >
+                                    Log out
+                                </Link>
+                            </Button>
+                        ) : (
+                            <>
+                                <Link
+                                    href={route('login')}
+                                    className="text-sm text-muted-foreground hover:text-foreground"
+                                    prefetch="hover"
+                                >
+                                    Log in
+                                </Link>
+                                <Button asChild>
+                                    <Link
+                                        href={route('register')}
+                                        prefetch="hover"
+                                    >
+                                        Sign up
+                                    </Link>
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
