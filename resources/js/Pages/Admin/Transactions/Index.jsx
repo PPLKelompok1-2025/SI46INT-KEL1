@@ -15,6 +15,15 @@ import {
 } from '@/Components/ui/dropdown-menu';
 import { Input } from '@/Components/ui/input';
 import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/Components/ui/pagination';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -516,34 +525,126 @@ export default function Index({
                                 </TableBody>
                             </Table>
                         </div>
-                        <div className="mt-4 flex items-center justify-end space-x-2">
-                            {transactions.links.map((link, index) => (
-                                <Button
-                                    key={index}
-                                    variant={
-                                        link.active ? 'default' : 'outline'
-                                    }
-                                    disabled={!link.url}
-                                    onClick={() =>
-                                        router.visit(link.url, {
-                                            data: {
-                                                search: searchTerm,
-                                                status,
-                                                type,
-                                                date_range: dateRange,
-                                                sort_field: sortField,
-                                                sort_direction: sortDirection,
-                                            },
-                                            preserveState: true,
-                                            preserveScroll: true,
-                                        })
-                                    }
-                                    size="sm"
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                />
-                            ))}
+                        <div className="mt-4">
+                            <Pagination className="justify-end">
+                                <PaginationContent>
+                                    {transactions.links.map((link, i) => {
+                                        if (!link.url && link.label === '...') {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationEllipsis />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        if (link.label.includes('Previous')) {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationPrevious
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                                {
+                                                                    data: {
+                                                                        search: searchTerm,
+                                                                        status,
+                                                                        type,
+                                                                        date_range:
+                                                                            dateRange,
+                                                                        sort_field:
+                                                                            sortField,
+                                                                        sort_direction:
+                                                                            sortDirection,
+                                                                    },
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
+                                                                },
+                                                            )
+                                                        }
+                                                        disabled={!link.url}
+                                                        className={
+                                                            !link.url
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }
+                                                    />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        if (link.label.includes('Next')) {
+                                            return (
+                                                <PaginationItem key={i}>
+                                                    <PaginationNext
+                                                        onClick={() =>
+                                                            link.url &&
+                                                            router.visit(
+                                                                link.url,
+                                                                {
+                                                                    data: {
+                                                                        search: searchTerm,
+                                                                        status,
+                                                                        type,
+                                                                        date_range:
+                                                                            dateRange,
+                                                                        sort_field:
+                                                                            sortField,
+                                                                        sort_direction:
+                                                                            sortDirection,
+                                                                    },
+                                                                    preserveState: true,
+                                                                    preserveScroll: true,
+                                                                },
+                                                            )
+                                                        }
+                                                        disabled={!link.url}
+                                                        className={
+                                                            !link.url
+                                                                ? 'pointer-events-none opacity-50'
+                                                                : 'cursor-pointer'
+                                                        }
+                                                    />
+                                                </PaginationItem>
+                                            );
+                                        }
+
+                                        return (
+                                            <PaginationItem key={i}>
+                                                <PaginationLink
+                                                    onClick={() =>
+                                                        link.url &&
+                                                        router.visit(link.url, {
+                                                            data: {
+                                                                search: searchTerm,
+                                                                status,
+                                                                type,
+                                                                date_range:
+                                                                    dateRange,
+                                                                sort_field:
+                                                                    sortField,
+                                                                sort_direction:
+                                                                    sortDirection,
+                                                            },
+                                                            preserveState: true,
+                                                            preserveScroll: true,
+                                                        })
+                                                    }
+                                                    isActive={link.active}
+                                                    disabled={!link.url}
+                                                    className={
+                                                        !link.url
+                                                            ? 'pointer-events-none opacity-50'
+                                                            : 'cursor-pointer'
+                                                    }
+                                                >
+                                                    {link.label}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        );
+                                    })}
+                                </PaginationContent>
+                            </Pagination>
                         </div>
                     </CardContent>
                 </Card>

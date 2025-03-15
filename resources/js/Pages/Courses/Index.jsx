@@ -274,6 +274,7 @@ export default function Index({ courses, filters, categories, levels }) {
                                             'courses.show',
                                             course.slug,
                                         )}
+                                        prefetch="hover"
                                     >
                                         <CardTitle className="line-clamp-2 transition-colors hover:text-primary">
                                             {course.title}
@@ -311,6 +312,7 @@ export default function Index({ courses, filters, categories, levels }) {
                                                 'courses.show',
                                                 course.slug,
                                             )}
+                                            prefetch="hover"
                                         >
                                             View Course
                                         </Link>

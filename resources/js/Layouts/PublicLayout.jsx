@@ -9,7 +9,11 @@ export default function PublicLayout({ children, title }) {
         <div className="flex min-h-screen flex-col bg-background">
             <header className="border-b bg-background py-4">
                 <div className="container mx-auto flex items-center justify-between">
-                    <Link href="/" className="flex items-center">
+                    <Link
+                        href="/"
+                        className="flex items-center"
+                        prefetch="hover"
+                    >
                         <span className="text-xl font-bold">Coursepedia</span>
                     </Link>
                     <div className="flex items-center gap-4">

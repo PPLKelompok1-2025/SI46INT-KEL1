@@ -17,6 +17,7 @@ use App\Http\Controllers\Instructor\LessonController;
 use App\Http\Controllers\Instructor\QuizController as InstructorQuizController;
 use App\Http\Controllers\Instructor\QuestionController;
 use App\Http\Controllers\Instructor\StudentController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
@@ -41,9 +42,7 @@ use Inertia\Inertia;
 |
 */
 
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+Route::get('/', [LandingController::class, 'index'])->name('home');
 
 // Public routes
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');

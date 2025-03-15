@@ -135,7 +135,11 @@ export default function AuthenticatedLayout({ children }) {
             >
                 <div className="flex h-full flex-col overflow-y-auto py-6 shadow-lg">
                     <div className="px-4">
-                        <Link href="/" className="flex items-center">
+                        <Link
+                            href="/"
+                            className="flex items-center"
+                            prefetch="hover"
+                        >
                             <span className="text-xl font-bold">
                                 Coursepedia
                             </span>
