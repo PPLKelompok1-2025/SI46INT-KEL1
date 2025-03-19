@@ -28,6 +28,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
+use App\Http\Controllers\Instructor\ReviewController as InstructorReviewController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -92,6 +93,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('transactions', AdminTransactionController::class)->only(['index', 'show']);
         Route::post('/transactions/{transaction}/refund', [AdminTransactionController::class, 'refund'])->name('transactions.refund');
 
+        // Reviews management
+        Route::get('/reviews', [App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/reported', [App\Http\Controllers\Admin\ReviewController::class, 'reported'])->name('reviews.reported');
+        Route::get('/reviews/course/{course}', [App\Http\Controllers\Admin\ReviewController::class, 'course'])->name('reviews.course');
+        Route::get('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('reviews.show');
+        Route::get('/reviews/{review}/edit', [App\Http\Controllers\Admin\ReviewController::class, 'edit'])->name('reviews.edit');
+        Route::put('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'update'])->name('reviews.update');
+        Route::delete('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+        Route::patch('/reviews/{review}/approve-reported', [App\Http\Controllers\Admin\ReviewController::class, 'approveReported'])->name('reviews.approve-reported');
+        Route::post('/reviews/{review}/respond', [App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
+
         // Reports
         Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
         Route::get('/reports/users', [ReportController::class, 'users'])->name('reports.users');
@@ -105,6 +117,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Course management
         Route::resource('courses', InstructorCourseController::class);
         Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+
+        // Reviews management
+        Route::get('/reviews', [InstructorReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/course/{course}', [InstructorReviewController::class, 'course'])->name('reviews.course');
+        Route::get('/reviews/{review}', [InstructorReviewController::class, 'show'])->name('reviews.show');
+        Route::post('/reviews/{review}/respond', [InstructorReviewController::class, 'respond'])->name('reviews.respond');
+        Route::post('/reviews/{review}/report', [InstructorReviewController::class, 'report'])->name('reviews.report');
 
         // Lesson routes - nested under courses
         Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');

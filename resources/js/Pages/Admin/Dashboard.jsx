@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     Clock,
@@ -35,6 +35,22 @@ export default function Dashboard({
     categoryDistribution,
     userRoleDistribution,
 }) {
+    // Get the active tab from URL query params, default to "overview"
+    const { url } = usePage();
+    const urlParams = new URLSearchParams(url.split('?')[1] || '');
+    const defaultTab = urlParams.get('tab') || 'overview';
+
+    // Handle tab change
+    const handleTabChange = (value) => {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('tab', value);
+        router.get(
+            currentUrl.pathname + currentUrl.search,
+            {},
+            { preserveState: true },
+        );
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Admin Dashboard" />
@@ -132,7 +148,11 @@ export default function Dashboard({
                     </Card>
                 </div>
 
-                <Tabs defaultValue="overview" className="space-y-4">
+                <Tabs
+                    defaultValue={defaultTab}
+                    className="space-y-4"
+                    onValueChange={handleTabChange}
+                >
                     <TabsList>
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="transactions">

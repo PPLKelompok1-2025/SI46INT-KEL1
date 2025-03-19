@@ -127,6 +127,7 @@ export default function Index({ enrollments }) {
                                                         enrollment.course.id,
                                                     )}
                                                     className="text-primary hover:underline"
+                                                    prefetch="hover"
                                                 >
                                                     {enrollment.course.title}
                                                 </Link>

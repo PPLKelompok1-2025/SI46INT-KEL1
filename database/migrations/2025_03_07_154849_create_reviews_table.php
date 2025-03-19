@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('rating');
             $table->text('comment')->nullable();
             $table->boolean('is_approved')->default(true);
+            $table->boolean('is_reported')->default(false);
             $table->timestamps();
         });
     }

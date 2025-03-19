@@ -86,7 +86,8 @@ export default function Withdraw({ availableEarnings, paymentMethods }) {
                                         />
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Minimum withdrawal amount is $50
+                                        Minimum withdrawal amount is{' '}
+                                        {formatCurrency(50000)}
                                     </p>
                                     {errors.amount && (
                                         <p className="text-sm text-destructive">
@@ -214,10 +215,11 @@ export default function Withdraw({ availableEarnings, paymentMethods }) {
                                     </h3>
                                     <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
                                         <li>
-                                            Minimum withdrawal amount is $50
+                                            Minimum withdrawal amount is{' '}
+                                            {formatCurrency(50000)}
                                         </li>
                                         <li>
-                                            Withdrawals are processed within 3-5
+                                            Withdrawals are processed within 1-3
                                             business days
                                         </li>
                                         <li>

@@ -33,7 +33,7 @@ import {
     TableRow,
 } from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { BookOpen, Edit, Eye, PlusCircle, Star, Trash } from 'lucide-react';
 import { useState } from 'react';
 
@@ -54,7 +54,10 @@ export default function Index({ courses }) {
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold">My Courses</h1>
                     <Button asChild>
-                        <Link href={route('instructor.courses.create')}>
+                        <Link
+                            href={route('instructor.courses.create')}
+                            prefetch="hover"
+                        >
                             <PlusCircle className="mr-2 h-4 w-4" /> Create
                             Course
                         </Link>
@@ -73,7 +76,10 @@ export default function Index({ courses }) {
                                 creating your first course now.
                             </p>
                             <Button asChild>
-                                <Link href={route('instructor.courses.create')}>
+                                <Link
+                                    href={route('instructor.courses.create')}
+                                    prefetch="hover"
+                                >
                                     <PlusCircle className="mr-2 h-4 w-4" />{' '}
                                     Create Your First Course
                                 </Link>
@@ -186,6 +192,7 @@ export default function Index({ courses }) {
                                                                 'instructor.courses.show',
                                                                 course.id,
                                                             )}
+                                                            prefetch="hover"
                                                         >
                                                             <Eye className="h-4 w-4" />
                                                         </Link>
@@ -200,6 +207,7 @@ export default function Index({ courses }) {
                                                                 'instructor.courses.edit',
                                                                 course.id,
                                                             )}
+                                                            prefetch="hover"
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </Link>

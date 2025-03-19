@@ -15,8 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $activeTab = $request->query('tab', 'overview');
+
         $stats = [
             'totalStudents' => User::where('role', 'student')->count(),
             'totalInstructors' => User::where('role', 'instructor')->count(),
@@ -26,34 +28,49 @@ class DashboardController extends Controller
             'pendingCourses' => Course::where('is_approved', false)->count(),
         ];
 
-        $recentTransactions = Transaction::with(['user', 'course'])
-            ->where('status', 'completed')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        $recentTransactions = [];
+        $recentUsers = [];
+        $recentCourses = [];
+        $monthlyRevenue = [];
+        $monthlyEnrollments = [];
+        $popularCourses = [];
+        $categoryDistribution = [];
+        $userRoleDistribution = [];
 
-        $recentUsers = User::orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        if (in_array($activeTab, ['overview', 'transactions'])) {
+            $recentTransactions = Transaction::with(['user', 'course'])
+                ->where('status', 'completed')
+                ->orderBy('created_at', 'desc')
+                ->take($activeTab === 'transactions' ? 15 : 5)
+                ->get();
+        }
 
-        $recentCourses = Course::with(['user', 'category'])
-            ->withCount(['lessons', 'enrollments', 'reviews'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get()
-            ->each(function ($course) {
-                $course->average_rating = $course->getAverageRatingAttribute();
-            });
+        if (in_array($activeTab, ['overview', 'users'])) {
+            $recentUsers = User::orderBy('created_at', 'desc')
+                ->take($activeTab === 'users' ? 15 : 5)
+                ->get();
 
-        $monthlyRevenue = $this->getMonthlyRevenue();
+            $userRoleDistribution = $this->getUserRoleDistribution();
+        }
 
-        $monthlyEnrollments = $this->getMonthlyEnrollments();
+        if (in_array($activeTab, ['overview', 'courses'])) {
+            $recentCourses = Course::with(['user', 'category'])
+                ->withCount(['lessons', 'enrollments', 'reviews'])
+                ->orderBy('created_at', 'desc')
+                ->take($activeTab === 'courses' ? 15 : 5)
+                ->get()
+                ->each(function ($course) {
+                    $course->average_rating = $course->getAverageRatingAttribute();
+                });
 
-        $popularCourses = $this->getPopularCourses();
+            $categoryDistribution = $this->getCategoryDistribution();
+            $popularCourses = $this->getPopularCourses();
+        }
 
-        $categoryDistribution = $this->getCategoryDistribution();
-
-        $userRoleDistribution = $this->getUserRoleDistribution();
+        if ($activeTab === 'overview') {
+            $monthlyRevenue = $this->getMonthlyRevenue();
+            $monthlyEnrollments = $this->getMonthlyEnrollments();
+        }
 
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,

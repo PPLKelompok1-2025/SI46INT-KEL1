@@ -15,6 +15,21 @@ class Review extends Model
         'rating',
         'comment',
         'is_approved',
+        'is_reported',
+        'instructor_response',
+        'response_date',
+        'admin_response',
+        'admin_response_date',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'response_date' => 'datetime',
+        'admin_response_date' => 'datetime',
     ];
 
     public function user()

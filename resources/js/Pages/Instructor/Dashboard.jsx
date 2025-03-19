@@ -11,8 +11,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { BookOpen, DollarSign, PlusCircle, Star, Users } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Dashboard({
     stats,
@@ -20,7 +21,25 @@ export default function Dashboard({
     recentEnrollments,
     recentReviews,
     charts,
+    activeTab: initialActiveTab = 'overview',
 }) {
+    const { url } = usePage();
+    const [activeTab, setActiveTab] = useState(initialActiveTab);
+
+    const handleTabChange = (value) => {
+        setActiveTab(value);
+
+        router.get(
+            url,
+            { tab: value },
+            {
+                preserveState: true,
+                replace: true,
+                only: [],
+            },
+        );
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Instructor Dashboard" />
@@ -30,7 +49,10 @@ export default function Dashboard({
                     <h1 className="text-3xl font-bold">Dashboard</h1>
 
                     <Button asChild>
-                        <Link href="/instructor/courses/create">
+                        <Link
+                            href="/instructor/courses/create"
+                            prefetch="hover"
+                        >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Create New Course
                         </Link>
@@ -95,7 +117,11 @@ export default function Dashboard({
                     </Card>
                 </div>
 
-                <Tabs defaultValue="overview" className="space-y-4">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="space-y-4"
+                >
                     <TabsList>
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="courses">Courses</TabsTrigger>
@@ -155,6 +181,7 @@ export default function Dashboard({
                                             >
                                                 <Link
                                                     href={`/instructor/courses/${enrollment.course.id}/students`}
+                                                    prefetch="hover"
                                                 >
                                                     View
                                                 </Link>
@@ -176,7 +203,10 @@ export default function Dashboard({
                                     </CardDescription>
                                 </div>
                                 <Button asChild>
-                                    <Link href="/instructor/courses/create">
+                                    <Link
+                                        href="/instructor/courses/create"
+                                        prefetch="hover"
+                                    >
                                         <PlusCircle className="mr-2 h-4 w-4" />
                                         Create Course
                                     </Link>
@@ -248,6 +278,7 @@ export default function Dashboard({
                                                 >
                                                     <Link
                                                         href={`/instructor/courses/${course.id}`}
+                                                        prefetch="hover"
                                                     >
                                                         View
                                                     </Link>
@@ -259,7 +290,10 @@ export default function Dashboard({
 
                                 <div className="mt-4 text-center">
                                     <Button variant="outline" asChild>
-                                        <Link href="/instructor/courses">
+                                        <Link
+                                            href="/instructor/courses"
+                                            prefetch="hover"
+                                        >
                                             View All Courses
                                         </Link>
                                     </Button>
@@ -333,7 +367,10 @@ export default function Dashboard({
 
                                 <div className="mt-4 text-center">
                                     <Button variant="outline" asChild>
-                                        <Link href="/instructor/students">
+                                        <Link
+                                            href="/instructor/students"
+                                            prefetch="hover"
+                                        >
                                             View All Students
                                         </Link>
                                     </Button>
@@ -406,7 +443,10 @@ export default function Dashboard({
 
                                 <div className="mt-4 text-center">
                                     <Button variant="outline" asChild>
-                                        <Link href="/instructor/reviews">
+                                        <Link
+                                            href="/instructor/reviews"
+                                            prefetch="hover"
+                                        >
                                             View All Reviews
                                         </Link>
                                     </Button>

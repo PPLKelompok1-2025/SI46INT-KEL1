@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Review;
 use App\Models\Transaction;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -16,9 +17,10 @@ class DashboardController extends Controller
     /**
      * Display the instructor dashboard.
      *
+     * @param \Illuminate\Http\Request $request
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $instructor = Auth::user();
 
@@ -133,6 +135,7 @@ class DashboardController extends Controller
                 'monthlyEarnings' => $monthlyEarnings,
                 'enrollmentsByCourse' => $enrollmentsByCourse,
             ],
+            'activeTab' => $request->query('tab', 'overview'),
         ]);
     }
 }

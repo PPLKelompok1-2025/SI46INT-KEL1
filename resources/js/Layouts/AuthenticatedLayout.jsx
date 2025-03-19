@@ -24,6 +24,7 @@ import {
     Menu,
     Search,
     Settings,
+    Star,
     Users,
     X,
 } from 'lucide-react';
@@ -58,6 +59,11 @@ export default function AuthenticatedLayout({ children }) {
                     href: '/admin/analytics',
                     icon: BarChart2,
                 },
+                {
+                    name: 'Reviews',
+                    href: '/admin/reviews',
+                    icon: Star,
+                },
                 { name: 'Settings', href: '/admin/settings', icon: Settings },
             ];
         } else if (role === 'instructor') {
@@ -81,6 +87,11 @@ export default function AuthenticatedLayout({ children }) {
                     name: 'Earnings',
                     href: '/instructor/earnings',
                     icon: DollarSign,
+                },
+                {
+                    name: 'Reviews',
+                    href: '/instructor/reviews',
+                    icon: Star,
                 },
                 {
                     name: 'Settings',
