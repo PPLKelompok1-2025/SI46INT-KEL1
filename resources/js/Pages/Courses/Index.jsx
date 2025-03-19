@@ -10,13 +10,19 @@ import {
 import { Input } from '@/Components/ui/input';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, WhenVisible } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import { BookOpen, ChevronDown, Filter, Search, Star } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
-export default function Index({ courses, filters, categories, levels }) {
-    const [isLoading, setIsLoading] = useState(false);
+export default function Index({
+    courses,
+    filters,
+    categories,
+    levels,
+    page,
+    isNextPageExists,
+}) {
     const [showFilters, setShowFilters] = useState(false);
 
     const { data, setData } = useForm({
@@ -25,41 +31,6 @@ export default function Index({ courses, filters, categories, levels }) {
         level: filters.level || '',
         sort: filters.sort || 'latest',
     });
-
-    const loadMoreCourses = useCallback(() => {
-        if (isLoading || !courses.next_page_url) return;
-
-        setIsLoading(true);
-        router.get(
-            courses.next_page_url,
-            {
-                search: data.search,
-                category: data.category,
-                level: data.level,
-                sort: data.sort,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => setIsLoading(false),
-                onError: () => setIsLoading(false),
-            },
-        );
-    }, [courses.next_page_url, data, isLoading]);
-
-    useEffect(() => {
-        const handleScroll = debounce(() => {
-            if (
-                window.innerHeight + window.scrollY >=
-                document.body.offsetHeight - 500
-            ) {
-                loadMoreCourses();
-            }
-        }, 100);
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [loadMoreCourses]);
 
     const debouncedSearch = debounce((value) => {
         setData('search', value);
@@ -98,7 +69,7 @@ export default function Index({ courses, filters, categories, levels }) {
             },
             {
                 preserveState: true,
-                only: ['courses'],
+                only: ['courses', 'page', 'isNextPageExists'],
             },
         );
     };
@@ -217,7 +188,7 @@ export default function Index({ courses, filters, categories, levels }) {
                 </div>
             )}
 
-            {courses.data.length === 0 ? (
+            {courses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
                     <BookOpen className="mb-4 h-12 w-12 text-gray-400" />
                     <h3 className="mb-2 text-lg font-medium">
@@ -233,7 +204,7 @@ export default function Index({ courses, filters, categories, levels }) {
             ) : (
                 <>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {courses.data.map((course) => (
+                        {courses.map((course) => (
                             <Card
                                 key={course.id}
                                 className="overflow-hidden transition-shadow hover:shadow-md"
@@ -322,16 +293,36 @@ export default function Index({ courses, filters, categories, levels }) {
                         ))}
                     </div>
 
-                    {courses.next_page_url && (
-                        <div className="mt-8 flex justify-center">
-                            <Button
-                                variant="outline"
-                                onClick={loadMoreCourses}
-                                disabled={isLoading}
-                                className="w-full sm:w-auto"
+                    {isNextPageExists && (
+                        <div className="mt-8">
+                            <WhenVisible
+                                always
+                                params={{
+                                    data: {
+                                        page: Number(page) + 1,
+                                        search: data.search,
+                                        category: data.category,
+                                        level: data.level,
+                                        sort: data.sort,
+                                    },
+                                    only: [
+                                        'courses',
+                                        'page',
+                                        'isNextPageExists',
+                                    ],
+                                }}
+                                fallback={
+                                    <div className="flex justify-center">
+                                        <p className="text-muted-foreground">
+                                            You've reached the end.
+                                        </p>
+                                    </div>
+                                }
                             >
-                                {isLoading ? 'Loading...' : 'Load More Courses'}
-                            </Button>
+                                <div className="flex justify-center">
+                                    <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                </div>
+                            </WhenVisible>
                         </div>
                     )}
                 </>

@@ -71,11 +71,16 @@ class CourseController extends Controller
                 ->avg('rating') ?? 0;
         });
 
+        $coursePagination = $courses->toArray();
+        $isNextPageExists = $coursePagination['current_page'] < $coursePagination['last_page'];
+
         $categories = Category::orderBy('name')->get();
         $levels = Course::distinct()->pluck('level')->filter()->values();
 
         return Inertia::render('Courses/Index', [
-            'courses' => $courses,
+            'courses' => Inertia::merge($courses->items()),
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists,
             'filters' => [
                 'category' => $category,
                 'level' => $level,

@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
-import { BookOpen, Clock, Star, Users } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function Show({
@@ -136,10 +136,7 @@ export default function Show({
                                         What You'll Learn
                                     </h3>
                                     <div className="grid gap-2 md:grid-cols-2">
-                                        {JSON.stringify(
-                                            course.what_you_will_learn,
-                                        )}
-                                        {/* {course.what_you_will_learn &&
+                                        {course.what_you_will_learn &&
                                             course.what_you_will_learn.map(
                                                 (item, index) => (
                                                     <div
@@ -150,7 +147,7 @@ export default function Show({
                                                         <span>{item}</span>
                                                     </div>
                                                 ),
-                                            )} */}
+                                            )}
                                     </div>
                                 </div>
 
@@ -161,16 +158,13 @@ export default function Show({
                                                 Requirements
                                             </h3>
                                             <ul className="list-inside list-disc space-y-2">
-                                                {JSON.stringify(
-                                                    course.requirements,
-                                                )}
-                                                {/* {course.requirements.map(
+                                                {course.requirements.map(
                                                     (item, index) => (
                                                         <li key={index}>
                                                             {item}
                                                         </li>
                                                     ),
-                                                )} */}
+                                                )}
                                             </ul>
                                         </div>
                                     )}

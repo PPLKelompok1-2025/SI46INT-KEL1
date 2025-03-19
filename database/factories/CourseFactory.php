@@ -33,8 +33,8 @@ class CourseFactory extends Factory
             'is_published' => fake()->boolean(80),
             'is_featured' => fake()->boolean(20),
             'is_approved' => fake()->boolean(90),
-            'requirements' => json_encode(fake()->sentences(rand(3, 6))),
-            'what_you_will_learn' => json_encode(fake()->sentences(rand(4, 8))),
+            'requirements' => fake()->sentences(rand(3, 6)),
+            'what_you_will_learn' => fake()->sentences(rand(4, 8)),
             'user_id' => User::factory()->instructor(),
             'category_id' => 1, // Will be overridden in seeder
             'created_at' => fake()->dateTimeBetween('-1 year', 'now'),
@@ -66,4 +66,3 @@ class CourseFactory extends Factory
         ]);
     }
 }
-
