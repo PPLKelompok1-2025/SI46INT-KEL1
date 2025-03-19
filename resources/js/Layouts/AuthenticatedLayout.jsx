@@ -13,6 +13,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     Award,
     BarChart2,
+    BookDashed,
     BookOpen,
     CreditCard,
     DollarSign,
@@ -63,6 +64,11 @@ export default function AuthenticatedLayout({ children }) {
                     name: 'Reviews',
                     href: '/admin/reviews',
                     icon: Star,
+                },
+                {
+                    name: 'Categories',
+                    href: '/admin/categories',
+                    icon: BookDashed,
                 },
                 { name: 'Settings', href: '/admin/settings', icon: Settings },
             ];
