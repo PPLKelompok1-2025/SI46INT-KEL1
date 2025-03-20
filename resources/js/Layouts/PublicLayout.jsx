@@ -16,6 +16,29 @@ export default function PublicLayout({ children, title }) {
                     >
                         <span className="text-xl font-bold">Coursepedia</span>
                     </Link>
+                    <div className="hidden space-x-6 md:flex">
+                        <Link
+                            href={route('courses.index')}
+                            className="text-gray-700 transition hover:text-primary dark:text-gray-200"
+                            prefetch="hover"
+                        >
+                            Courses
+                        </Link>
+                        <Link
+                            href={route('categories.index')}
+                            className="text-gray-700 transition hover:text-primary dark:text-gray-200"
+                            prefetch="hover"
+                        >
+                            Categories
+                        </Link>
+                        <Link
+                            href={route('search')}
+                            className="text-gray-700 transition hover:text-primary dark:text-gray-200"
+                            prefetch="hover"
+                        >
+                            Search
+                        </Link>
+                    </div>
                     <div className="flex items-center gap-4">
                         {user ? (
                             <Button asChild>
