@@ -40,11 +40,9 @@ export default function Index({
     dailyEnrollments,
     dateRange,
 }) {
-    // Calculate trend percentages (placeholder values - you can replace with real calculations)
-    const revenueTrend = 5.2;
-    const enrollmentTrend = 8.7;
+    const revenueTrend = stats.revenueTrend;
+    const enrollmentTrend = stats.enrollmentTrend;
 
-    // Format data for charts to use the correct keys
     const formattedRevenueData = dailyRevenue.map((item) => ({
         date: item.date,
         revenue: parseFloat(item.total),
@@ -89,16 +87,14 @@ export default function Index({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-semibold text-gray-900">
+                            <div className="text-2xl font-bold text-gray-900">
                                 {formatCurrency(stats.totalRevenue)}
                             </div>
-                        </CardContent>
-                        <CardFooter className="flex items-center gap-2 text-sm">
-                            <div className="flex gap-2 font-medium leading-none text-green-600">
+                            <div className="flex gap-2 text-xs text-green-600">
                                 <TrendingUp className="h-4 w-4" />{' '}
                                 {revenueTrend}% this month
                             </div>
-                        </CardFooter>
+                        </CardContent>
                     </Card>
 
                     <Card>
@@ -108,16 +104,14 @@ export default function Index({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-semibold text-gray-900">
+                            <div className="text-2xl font-bold text-gray-900">
                                 {stats.totalEnrollments}
                             </div>
-                        </CardContent>
-                        <CardFooter className="flex items-center gap-2 text-sm">
-                            <div className="flex gap-2 font-medium leading-none text-green-600">
+                            <div className="flex gap-2 text-xs text-green-600">
                                 <TrendingUp className="h-4 w-4" />{' '}
                                 {enrollmentTrend}% this month
                             </div>
-                        </CardFooter>
+                        </CardContent>
                     </Card>
 
                     <Card>
@@ -127,16 +121,14 @@ export default function Index({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-semibold text-gray-900">
+                            <div className="text-2xl font-bold text-gray-900">
                                 {stats.totalNewUsers}
                             </div>
-                        </CardContent>
-                        <CardFooter className="flex items-center gap-2 text-sm">
-                            <div className="leading-none text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                                 <Users className="mr-1 inline h-4 w-4" /> Active
                                 students
                             </div>
-                        </CardFooter>
+                        </CardContent>
                     </Card>
                 </div>
 

@@ -7,12 +7,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
 import { Input } from '@/Components/ui/input';
 import {
     Pagination,
@@ -38,10 +32,16 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, router } from '@inertiajs/react';
-import { Download, Ellipsis, Search } from 'lucide-react';
+import { Download, Eye, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function Index({
@@ -102,11 +102,6 @@ export default function Index({
         { value: 'last_year', label: 'Last Year' },
     ];
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        applyFilters();
-    };
-
     const applyFilters = useCallback(
         () =>
             router.get(
@@ -128,6 +123,10 @@ export default function Index({
     );
 
     const handleSort = (field) => {
+        if (field === 'created') {
+            field = 'created_at';
+        }
+
         const direction =
             field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
         setSortField(field);
@@ -136,7 +135,10 @@ export default function Index({
         router.get(
             route('admin.transactions.index'),
             {
-                ...filters,
+                search: searchTerm,
+                status,
+                type,
+                date_range: dateRange,
                 sort_field: field,
                 sort_direction: direction,
             },
@@ -148,7 +150,7 @@ export default function Index({
     };
 
     useEffect(() => {
-        if (status || type || dateRange) {
+        if (status !== 'all' || type !== 'all' || dateRange !== 'all') {
             applyFilters();
         }
     }, [status, type, dateRange, applyFilters]);
@@ -172,7 +174,6 @@ export default function Index({
                     <h1 className="text-3xl font-bold">Transactions</h1>
                 </div>
 
-                {/* Summary Cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <Card>
                         <CardHeader className="pb-2">
@@ -235,131 +236,156 @@ export default function Index({
                     </Card>
                 </div>
 
-                {/* Filters */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Filters</CardTitle>
+                        <CardTitle>All Transactions</CardTitle>
                         <CardDescription>
-                            Filter transactions by various criteria
+                            Manage payment transactions across the platform
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-x-4 md:space-y-0">
-                            <div className="flex-1 space-y-2">
-                                <form
-                                    onSubmit={handleSearch}
-                                    className="flex gap-2"
-                                >
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="search"
-                                            placeholder="Search transactions..."
-                                            className="pl-8"
-                                            value={searchTerm}
-                                            onChange={(e) =>
-                                                setSearchTerm(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                    <Button type="submit">Search</Button>
-                                </form>
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search transactions..."
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                        e.key === 'Enter' && applyFilters()
+                                    }
+                                />
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Select
-                                    value={status}
-                                    onValueChange={setStatus}
-                                >
-                                    <SelectTrigger className="w-[160px]">
-                                        <SelectValue placeholder="Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(statuses).map(
-                                            ([value, label]) => (
-                                                <SelectItem
-                                                    key={value}
-                                                    value={value}
-                                                >
-                                                    {label}
-                                                </SelectItem>
-                                            ),
-                                        )}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select value={type} onValueChange={setType}>
-                                    <SelectTrigger className="w-[160px]">
-                                        <SelectValue placeholder="Transaction Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(types).map(
-                                            ([value, label]) => (
-                                                <SelectItem
-                                                    key={value}
-                                                    value={value}
-                                                >
-                                                    {label}
-                                                </SelectItem>
-                                            ),
-                                        )}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select
-                                    value={dateRange}
-                                    onValueChange={setDateRange}
-                                >
-                                    <SelectTrigger className="w-[160px]">
-                                        <SelectValue placeholder="Date Range" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {dateRangeOptions.map((option) => (
+                            <Select value={status} onValueChange={setStatus}>
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(statuses).map(
+                                        ([value, label]) => (
                                             <SelectItem
-                                                key={option.value}
-                                                value={option.value}
+                                                key={value}
+                                                value={value}
                                             >
-                                                {option.label}
+                                                {label}
                                             </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            <Select value={type} onValueChange={setType}>
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(types).map(
+                                        ([value, label]) => (
+                                            <SelectItem
+                                                key={value}
+                                                value={value}
+                                            >
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={dateRange}
+                                onValueChange={setDateRange}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by date" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {dateRangeOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={
+                                    sortField === 'created_at'
+                                        ? sortDirection === 'desc'
+                                            ? 'created_at_desc'
+                                            : 'created_at_asc'
+                                        : sortField === 'amount'
+                                          ? sortDirection === 'desc'
+                                              ? 'amount_desc'
+                                              : 'amount_asc'
+                                          : 'created_at_desc'
+                                }
+                                onValueChange={(value) => {
+                                    const [field, direction] = value.split('_');
+                                    setSortField(field);
+                                    setSortDirection(direction);
+                                    handleSort(field);
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="created_at_desc">
+                                        Newest First
+                                    </SelectItem>
+                                    <SelectItem value="created_at_asc">
+                                        Oldest First
+                                    </SelectItem>
+                                    <SelectItem value="amount_desc">
+                                        Amount High to Low
+                                    </SelectItem>
+                                    <SelectItem value="amount_asc">
+                                        Amount Low to High
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {(searchTerm ||
+                                status !== 'all' ||
+                                type !== 'all' ||
+                                dateRange !== 'all' ||
+                                sortField !== 'created_at' ||
+                                sortDirection !== 'desc') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
+                                    className="whitespace-nowrap"
                                 >
-                                    Reset
+                                    Clear Filters
                                 </Button>
-                            </div>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
 
-                {/* Transactions Table */}
-                <Card>
-                    <CardHeader className="flex-row items-center justify-between space-y-0">
-                        <CardTitle>Transaction List</CardTitle>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                                (window.location.href = route(
-                                    'admin.transactions.export',
-                                    {
-                                        search: searchTerm,
-                                        status,
-                                        type,
-                                        date_range: dateRange,
-                                    },
-                                ))
-                            }
-                        >
-                            <Download className="mr-2 h-4 w-4" />
-                            Export
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="rounded-md border">
+                        <div className="mb-4 ml-auto w-fit">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    (window.location.href = route(
+                                        'admin.transactions.export',
+                                        {
+                                            search: searchTerm,
+                                            status,
+                                            type,
+                                            date_range: dateRange,
+                                        },
+                                    ))
+                                }
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                Export
+                            </Button>
+                        </div>
+                        <div className="rounded-lg border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -410,7 +436,9 @@ export default function Index({
                                         </TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Type</TableHead>
-                                        <TableHead></TableHead>
+                                        <TableHead className="text-right">
+                                            Actions
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -471,53 +499,71 @@ export default function Index({
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-8 p-0"
-                                                            >
-                                                                <span className="sr-only">
-                                                                    Open menu
-                                                                </span>
-                                                                <Ellipsis className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    router.visit(
-                                                                        route(
-                                                                            'admin.transactions.show',
-                                                                            transaction.id,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            >
-                                                                View Details
-                                                            </DropdownMenuItem>
-                                                            {transaction.status ===
-                                                                'completed' &&
-                                                                transaction.type ===
-                                                                    'purchase' && (
-                                                                    <DropdownMenuItem
+                                                    <div className="flex justify-end space-x-2">
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
                                                                         onClick={() =>
-                                                                            router.post(
+                                                                            router.visit(
                                                                                 route(
-                                                                                    'admin.transactions.refund',
+                                                                                    'admin.transactions.show',
                                                                                     transaction.id,
                                                                                 ),
                                                                             )
                                                                         }
                                                                     >
-                                                                        Process
-                                                                        Refund
-                                                                    </DropdownMenuItem>
-                                                                )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>
+                                                                        View
+                                                                        transaction
+                                                                        details
+                                                                    </p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+
+                                                        {transaction.status ===
+                                                            'completed' &&
+                                                            transaction.type ===
+                                                                'purchase' && (
+                                                                <TooltipProvider>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                    router.post(
+                                                                                        route(
+                                                                                            'admin.transactions.refund',
+                                                                                            transaction.id,
+                                                                                        ),
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <RefreshCw className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>
+                                                                                Process
+                                                                                refund
+                                                                            </p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            )}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

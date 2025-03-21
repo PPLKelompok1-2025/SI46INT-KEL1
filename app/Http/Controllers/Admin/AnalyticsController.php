@@ -25,11 +25,30 @@ class AnalyticsController extends Controller
             $endDate = Carbon::parse($endDate);
         }
 
+        $periodDuration = $startDate->diffInDays($endDate) + 1;
+
+        $previousPeriodStartDate = (clone $startDate)->subDays($periodDuration);
+        $previousPeriodEndDate = (clone $startDate)->subDays(1);
+
         $totalRevenue = Transaction::whereBetween('created_at', [$startDate, $endDate])
             ->where('status', 'completed')
             ->sum('amount');
 
         $totalEnrollments = Enrollment::whereBetween('created_at', [$startDate, $endDate])->count();
+        // Previous period data for trend calculation
+        $previousRevenue = Transaction::whereBetween('created_at', [$previousPeriodStartDate, $previousPeriodEndDate])
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        $previousEnrollments = Enrollment::whereBetween('created_at', [$previousPeriodStartDate, $previousPeriodEndDate])->count();
+
+        $revenueTrend = $previousRevenue > 0
+            ? round((($totalRevenue - $previousRevenue) / $previousRevenue) * 100, 1)
+            : 0;
+
+        $enrollmentTrend = $previousEnrollments > 0
+            ? round((($totalEnrollments - $previousEnrollments) / $previousEnrollments) * 100, 1)
+            : 0;
 
         $totalNewUsers = User::whereBetween('created_at', [$startDate, $endDate])->count();
 
@@ -58,6 +77,8 @@ class AnalyticsController extends Controller
                 'totalRevenue' => $totalRevenue,
                 'totalEnrollments' => $totalEnrollments,
                 'totalNewUsers' => $totalNewUsers,
+                'revenueTrend' => $revenueTrend,
+                'enrollmentTrend' => $enrollmentTrend,
             ],
             'topCourses' => $topCourses,
             'dailyRevenue' => $dailyRevenue,

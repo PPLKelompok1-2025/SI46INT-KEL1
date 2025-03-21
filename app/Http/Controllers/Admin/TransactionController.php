@@ -20,37 +20,63 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $query = Transaction::query()
-            ->with(['user', 'course'])
-            ->when($request->has('search'), function ($query) use ($request) {
-                $search = $request->get('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('transaction_id', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($subQuery) use ($search) {
-                          $subQuery->where('name', 'like', "%{$search}%")
-                                   ->orWhere('email', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('course', function ($subQuery) use ($search) {
-                          $subQuery->where('title', 'like', "%{$search}%");
-                      });
-                });
-            })
-            ->when($request->has('status') && $request->get('status') !== 'all', function ($query) use ($request) {
-                $query->where('status', $request->get('status'));
-            })
-            ->when($request->has('type') && $request->get('type') !== 'all', function ($query) use ($request) {
-                $status = $request->get('type');
-                if ($status === 'purchase') {
+            ->with(['user', 'course']);
+
+        $sortField = 'created_at';
+        $sortDirection = 'desc';
+
+        if ($request->filled('sort_field') && $request->filled('sort_direction')) {
+            $allowedSortFields = ['transaction_id', 'created_at', 'amount', 'status'];
+            if (in_array($request->sort_field, $allowedSortFields)) {
+                $sortField = $request->sort_field;
+                $sortDirection = $request->sort_direction;
+            }
+        }
+
+        if ($sortField === 'created') {
+            $sortField = 'created_at';
+        }
+
+        $query->orderBy($sortField, $sortDirection);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($subQuery) use ($search) {
+                      $subQuery->where('name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('course', function ($subQuery) use ($search) {
+                      $subQuery->where('title', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+        }
+
+        if ($request->filled('type')) {
+            if ($request->type !== 'all') {
+                $type = $request->type;
+                if ($type === 'purchase') {
                     $query->where('course_id', '!=', null)
-                          ->where('status', '!=', 'refunded');
-                } elseif ($status === 'refund') {
-                    $query->where('status', 'refunded');
-                } elseif ($status === 'payout') {
-                    $query->where('course_id', null)
-                          ->where('instructor_amount', '>', 0);
+                          ->where('type', 'purchase');
+                } elseif ($type === 'refund') {
+                    $query->where('type', 'refund');
+                } elseif ($type === 'payout') {
+                    $query->where('course_id', '!=', null)
+                          ->where('type', 'payout');
                 }
-            })
-            ->when($request->has('date_range'), function ($query) use ($request) {
-                $dateRange = $request->get('date_range');
+            }
+        }
+
+        if ($request->filled('date_range')) {
+            $dateRange = $request->date_range;
+            if ($dateRange !== 'all') {
                 if ($dateRange === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($dateRange === 'yesterday') {
@@ -69,18 +95,12 @@ class TransactionController extends Controller
                     $query->whereYear('created_at', now()->year);
                 } elseif ($dateRange === 'last_year') {
                     $query->whereYear('created_at', now()->subYear()->year);
-                } elseif (is_array($dateRange) && isset($dateRange['start'], $dateRange['end'])) {
-                    $query->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
                 }
-            });
+            }
+        }
 
-        $sortField = $request->get('sort_field', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
+        $transactions = $query->paginate(10)->withQueryString();
 
-        $transactions = $query->paginate(15)->withQueryString();
-
-        // Calculate summary statistics
         $summary = [
             'total_transactions' => Transaction::count(),
             'total_revenue' => Transaction::where('status', '!=', 'refunded')->sum('amount'),
@@ -90,7 +110,14 @@ class TransactionController extends Controller
 
         return Inertia::render('Admin/Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'status', 'type', 'date_range', 'sort_field', 'sort_direction']),
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'status' => $request->input('status', 'all'),
+                'type' => $request->input('type', 'all'),
+                'date_range' => $request->input('date_range', 'all'),
+                'sort_field' => $request->input('sort_field', 'created_at'),
+                'sort_direction' => $request->input('sort_direction', 'desc'),
+            ],
             'summary' => $summary,
             'statuses' => $this->getAvailableStatuses(),
             'types' => $this->getAvailableTypes(),
@@ -104,7 +131,6 @@ class TransactionController extends Controller
     {
         $transaction->load(['user', 'course']);
 
-        // Get related transactions (same user or same course)
         $relatedTransactions = Transaction::where(function ($query) use ($transaction) {
                 $query->where('user_id', $transaction->user_id)
                       ->orWhere('course_id', $transaction->course_id);
@@ -126,7 +152,6 @@ class TransactionController extends Controller
      */
     public function refund(Request $request, Transaction $transaction)
     {
-        // Validate that the transaction can be refunded
         if ($transaction->status === 'refunded') {
             return back()->with('error', 'This transaction has already been refunded.');
         }
@@ -135,23 +160,18 @@ class TransactionController extends Controller
             return back()->with('error', 'Only completed transactions can be refunded.');
         }
 
-        // Start a database transaction
         DB::beginTransaction();
 
         try {
-            // Update the transaction status
             $transaction->update([
                 'status' => 'refunded',
                 'type' => 'refund',
             ]);
 
-            // If this is a course purchase, handle the enrollment
             if ($transaction->course_id) {
-                // Delete the enrollment record if it exists
                 $transaction->user->enrollments()->where('course_id', $transaction->course_id)->delete();
             }
 
-            // Create a refund record (optional, depending on your system design)
             Transaction::create([
                 'user_id' => $transaction->user_id,
                 'course_id' => $transaction->course_id,
@@ -166,8 +186,6 @@ class TransactionController extends Controller
             ]);
 
             DB::commit();
-
-            // Notification logic could be added here
 
             return back()->with('success', 'Transaction has been successfully refunded.');
         } catch (\Exception $e) {
