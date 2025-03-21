@@ -155,7 +155,7 @@ export default function Index({ promoCodes, filters, stats }) {
                 <div className="grid gap-6 md:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
                                 Total Promo Codes
                             </CardTitle>
                             <Tag className="h-4 w-4 text-muted-foreground" />
@@ -168,7 +168,7 @@ export default function Index({ promoCodes, filters, stats }) {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
                                 Active Promo Codes
                             </CardTitle>
                             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -181,7 +181,7 @@ export default function Index({ promoCodes, filters, stats }) {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
                                 Total Discount Amount
                             </CardTitle>
                             <Calendar className="h-4 w-4 text-muted-foreground" />

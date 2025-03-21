@@ -1,3 +1,4 @@
+import StarRating from '@/Components/StarRating';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import {
@@ -48,39 +49,43 @@ import {
 } from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import { format } from 'date-fns';
 import { debounce } from 'lodash';
 import {
-    BookOpen,
+    AlertCircle,
     Edit,
     Eye,
-    Folder,
-    FolderTree,
-    PlusCircle,
+    Filter,
     Search,
+    Star,
     Trash,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export default function Index({ categories, filters, stats }) {
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [categoryToDelete, setCategoryToDelete] = useState(null);
+export default function Index({
+    auth,
+    reviews,
+    filters,
+    courses,
+    instructors,
+    stats,
+}) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [parentFilter, setParentFilter] = useState(filters.parent || 'all');
-    const [sortFilter, setSortFilter] = useState(filters.sort || 'name_asc');
-
-    const confirmDelete = (category) => {
-        setCategoryToDelete(category);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleDelete = () => {
-        router.delete(route('admin.categories.destroy', categoryToDelete.id), {
-            onSuccess: () => {
-                setDeleteDialogOpen(false);
-                setCategoryToDelete(null);
-            },
-        });
-    };
+    const [courseFilter, setCourseFilter] = useState(
+        filters.course_id || 'all',
+    );
+    const [instructorFilter, setInstructorFilter] = useState(
+        filters.instructor_id || 'all',
+    );
+    const [ratingFilter, setRatingFilter] = useState(filters.rating || 'all');
+    const [reportedFilter, setReportedFilter] = useState(
+        filters.reported || 'all',
+    );
+    const [sortFilter, setSortFilter] = useState(
+        filters.sort || 'created_at_desc',
+    );
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [reviewToDelete, setReviewToDelete] = useState(null);
 
     const handleSearch = debounce((value) => {
         applyFilters({ search: value });
@@ -88,7 +93,7 @@ export default function Index({ categories, filters, stats }) {
 
     const applyFilters = (newFilters) => {
         router.get(
-            route('admin.categories.index'),
+            route('admin.reviews.index'),
             {
                 ...filters,
                 ...newFilters,
@@ -98,16 +103,7 @@ export default function Index({ categories, filters, stats }) {
     };
 
     const resetFilters = () => {
-        router.get(
-            route('admin.categories.index'),
-            {},
-            { preserveState: true },
-        );
-    };
-
-    const handleParentChange = (value) => {
-        setParentFilter(value);
-        applyFilters({ parent: value });
+        router.get(route('admin.reviews.index'), {}, { preserveState: true });
     };
 
     const handleSortChange = (value) => {
@@ -117,31 +113,49 @@ export default function Index({ categories, filters, stats }) {
 
     useEffect(() => {
         setSearchTerm(filters.search || '');
-        setParentFilter(filters.parent || 'all');
-        setSortFilter(filters.sort || 'name_asc');
+        setCourseFilter(filters.course_id || 'all');
+        setInstructorFilter(filters.instructor_id || 'all');
+        setRatingFilter(filters.rating || 'all');
+        setReportedFilter(filters.reported || 'all');
+        setSortFilter(filters.sort || 'created_at_desc');
     }, [filters]);
 
+    const confirmDelete = (review) => {
+        setReviewToDelete(review);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDelete = () => {
+        router.delete(route('admin.reviews.destroy', reviewToDelete.id), {
+            onSuccess: () => setDeleteDialogOpen(false),
+        });
+    };
+
     return (
-        <AuthenticatedLayout>
-            <Head title="Category Management" />
+        <AuthenticatedLayout user={auth.user}>
+            <Head title="Review Management" />
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold">Category Management</h1>
-                    <Button asChild>
-                        <Link href={route('admin.categories.create')}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Category
-                        </Link>
-                    </Button>
+                    <h1 className="text-3xl font-bold">Review Management</h1>
+                    <Link href={route('admin.reviews.reported')}>
+                        <Button
+                            variant="destructive"
+                            className="flex items-center gap-1"
+                        >
+                            <AlertCircle className="h-4 w-4" />
+                            <span>Reported Reviews</span>
+                        </Button>
+                    </Link>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Categories
+                                Total Reviews
                             </CardTitle>
-                            <Folder className="h-4 w-4 text-muted-foreground" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
@@ -152,26 +166,26 @@ export default function Index({ categories, filters, stats }) {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Parent Categories
+                                Reported Reviews
                             </CardTitle>
-                            <FolderTree className="h-4 w-4 text-muted-foreground" />
+                            <AlertCircle className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {stats.parent}
+                                {stats.reported}
                             </div>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Courses
+                                Average Rating
                             </CardTitle>
-                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            <Star className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {stats.totalCourses}
+                                {stats.average_rating}
                             </div>
                         </CardContent>
                     </Card>
@@ -179,9 +193,9 @@ export default function Index({ categories, filters, stats }) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>All Categories</CardTitle>
+                        <CardTitle>All Reviews</CardTitle>
                         <CardDescription>
-                            Manage course categories across the platform
+                            Manage course reviews across the platform
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -190,7 +204,7 @@ export default function Index({ categories, filters, stats }) {
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     type="search"
-                                    placeholder="Search categories..."
+                                    placeholder="Search reviews..."
                                     className="pl-8"
                                     value={searchTerm}
                                     onChange={(e) => {
@@ -200,21 +214,93 @@ export default function Index({ categories, filters, stats }) {
                                 />
                             </div>
                             <Select
-                                value={parentFilter}
-                                onValueChange={handleParentChange}
+                                value={courseFilter}
+                                onValueChange={(value) => {
+                                    setCourseFilter(value);
+                                    applyFilters({ course_id: value });
+                                }}
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by type" />
+                                    <SelectValue placeholder="Filter by course" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">
-                                        All Categories
+                                        All Courses
                                     </SelectItem>
-                                    <SelectItem value="parent">
-                                        Parent Categories
+                                    {courses.map((course) => (
+                                        <SelectItem
+                                            key={course.id}
+                                            value={course.id.toString()}
+                                        >
+                                            {course.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={instructorFilter}
+                                onValueChange={(value) => {
+                                    setInstructorFilter(value);
+                                    applyFilters({ instructor_id: value });
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by instructor" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Instructors
                                     </SelectItem>
-                                    <SelectItem value="child">
-                                        Sub Categories
+                                    {instructors.map((instructor) => (
+                                        <SelectItem
+                                            key={instructor.id}
+                                            value={instructor.id.toString()}
+                                        >
+                                            {instructor.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={ratingFilter}
+                                onValueChange={(value) => {
+                                    setRatingFilter(value);
+                                    applyFilters({ rating: value });
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by rating" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Ratings
+                                    </SelectItem>
+                                    {[5, 4, 3, 2, 1].map((rating) => (
+                                        <SelectItem
+                                            key={rating}
+                                            value={rating.toString()}
+                                        >
+                                            {rating} Star{rating !== 1 && 's'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={reportedFilter}
+                                onValueChange={(value) => {
+                                    setReportedFilter(value);
+                                    applyFilters({ reported: value });
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Reviews
+                                    </SelectItem>
+                                    <SelectItem value="1">
+                                        Reported Only
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -226,27 +312,26 @@ export default function Index({ categories, filters, stats }) {
                                     <SelectValue placeholder="Sort by" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="name_asc">
-                                        Name (A-Z)
-                                    </SelectItem>
-                                    <SelectItem value="name_desc">
-                                        Name (Z-A)
-                                    </SelectItem>
                                     <SelectItem value="created_at_desc">
                                         Newest First
                                     </SelectItem>
                                     <SelectItem value="created_at_asc">
                                         Oldest First
                                     </SelectItem>
-                                    <SelectItem value="courses_count_desc">
-                                        Most Courses
+                                    <SelectItem value="rating_desc">
+                                        Rating High to Low
                                     </SelectItem>
-                                    <SelectItem value="courses_count_asc">
-                                        Least Courses
+                                    <SelectItem value="rating_asc">
+                                        Rating Low to High
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            {(filters.search || filters.parent !== 'all') && (
+                            {(searchTerm ||
+                                courseFilter ||
+                                instructorFilter ||
+                                ratingFilter ||
+                                reportedFilter ||
+                                sortFilter !== 'created_at_desc') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
@@ -257,16 +342,20 @@ export default function Index({ categories, filters, stats }) {
                             )}
                         </div>
 
-                        {categories.data.length === 0 ? (
+                        {reviews.data.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-8 text-center">
-                                <FolderTree className="mb-4 h-12 w-12 text-muted-foreground" />
+                                <Filter className="mb-4 h-12 w-12 text-muted-foreground" />
                                 <h3 className="mb-2 text-lg font-medium">
-                                    No categories found
+                                    No reviews found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {filters.search || filters.parent !== 'all'
-                                        ? "Try adjusting your search or filter to find what you're looking for."
-                                        : 'There are no categories in the system yet.'}
+                                    {searchTerm ||
+                                    courseFilter ||
+                                    instructorFilter ||
+                                    ratingFilter ||
+                                    reportedFilter
+                                        ? "Try adjusting your filters to find what you're looking for."
+                                        : 'There are no reviews in the system yet.'}
                                 </p>
                             </div>
                         ) : (
@@ -275,77 +364,96 @@ export default function Index({ categories, filters, stats }) {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Name</TableHead>
+                                                <TableHead className="w-[80px]">
+                                                    Rating
+                                                </TableHead>
+                                                <TableHead>Review</TableHead>
+                                                <TableHead>Course</TableHead>
+                                                <TableHead>Student</TableHead>
                                                 <TableHead>
-                                                    Description
+                                                    Instructor
                                                 </TableHead>
-                                                <TableHead>Parent</TableHead>
-                                                <TableHead className="text-center">
-                                                    Courses
+                                                <TableHead className="w-[100px]">
+                                                    Date
                                                 </TableHead>
-                                                <TableHead className="text-center">
-                                                    Subcategories
+                                                <TableHead className="w-[100px]">
+                                                    Status
                                                 </TableHead>
-                                                <TableHead className="text-right">
+                                                <TableHead className="w-[100px] text-right">
                                                     Actions
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {categories.data.map((category) => (
-                                                <TableRow key={category.id}>
+                                            {reviews.data.map((review) => (
+                                                <TableRow key={review.id}>
                                                     <TableCell>
-                                                        <div className="flex items-center space-x-3">
-                                                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                                                                {category.icon ? (
-                                                                    <span className="text-primary">
-                                                                        {
-                                                                            category.icon
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    <Folder className="h-5 w-5 text-primary" />
-                                                                )}
-                                                            </div>
-                                                            <div className="font-medium">
-                                                                {category.name}
-                                                            </div>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="max-w-xs truncate">
-                                                            {category.description ||
-                                                                'No description'}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {category.parent ? (
-                                                            <Badge variant="outline">
-                                                                {
-                                                                    category
-                                                                        .parent
-                                                                        .name
+                                                        <div className="flex items-center">
+                                                            <StarRating
+                                                                rating={
+                                                                    review.rating
                                                                 }
-                                                            </Badge>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">
-                                                                None
+                                                                size="sm"
+                                                            />
+                                                            <span className="ml-1 text-sm">
+                                                                {review.rating}
                                                             </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="max-w-xs truncate">
+                                                        {review.comment
+                                                            ? review.comment.substring(
+                                                                  0,
+                                                                  100,
+                                                              ) +
+                                                              (review.comment
+                                                                  .length > 100
+                                                                  ? '...'
+                                                                  : '')
+                                                            : 'No comment'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Link
+                                                            href={route(
+                                                                'admin.reviews.course',
+                                                                review.course
+                                                                    .id,
+                                                            )}
+                                                            className="text-blue-600 hover:underline"
+                                                        >
+                                                            {
+                                                                review.course
+                                                                    .title
+                                                            }
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {review.user.name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {
+                                                            review.course.user
+                                                                .name
+                                                        }
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">
+                                                        {format(
+                                                            new Date(
+                                                                review.created_at,
+                                                            ),
+                                                            'MMM d, yyyy',
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant="secondary">
-                                                            {
-                                                                category.courses_count
-                                                            }
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Badge variant="secondary">
-                                                            {
-                                                                category.children_count
-                                                            }
-                                                        </Badge>
+                                                    <TableCell>
+                                                        {review.is_reported ? (
+                                                            <Badge variant="destructive">
+                                                                Reported
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline">
+                                                                Active
+                                                            </Badge>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end space-x-2">
@@ -361,8 +469,8 @@ export default function Index({ categories, filters, stats }) {
                                                                         >
                                                                             <Link
                                                                                 href={route(
-                                                                                    'admin.categories.show',
-                                                                                    category.id,
+                                                                                    'admin.reviews.show',
+                                                                                    review.id,
                                                                                 )}
                                                                             >
                                                                                 <Eye className="h-4 w-4" />
@@ -372,12 +480,12 @@ export default function Index({ categories, filters, stats }) {
                                                                     <TooltipContent>
                                                                         <p>
                                                                             View
+                                                                            review
                                                                             details
                                                                         </p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
-
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger
@@ -390,8 +498,8 @@ export default function Index({ categories, filters, stats }) {
                                                                         >
                                                                             <Link
                                                                                 href={route(
-                                                                                    'admin.categories.edit',
-                                                                                    category.id,
+                                                                                    'admin.reviews.edit',
+                                                                                    review.id,
                                                                                 )}
                                                                             >
                                                                                 <Edit className="h-4 w-4" />
@@ -401,12 +509,11 @@ export default function Index({ categories, filters, stats }) {
                                                                     <TooltipContent>
                                                                         <p>
                                                                             Edit
-                                                                            category
+                                                                            review
                                                                         </p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
-
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger
@@ -417,26 +524,18 @@ export default function Index({ categories, filters, stats }) {
                                                                             size="icon"
                                                                             onClick={() =>
                                                                                 confirmDelete(
-                                                                                    category,
+                                                                                    review,
                                                                                 )
-                                                                            }
-                                                                            disabled={
-                                                                                category.courses_count >
-                                                                                    0 ||
-                                                                                category.children_count >
-                                                                                    0
                                                                             }
                                                                         >
                                                                             <Trash className="h-4 w-4" />
                                                                         </Button>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>
-                                                                        {category.courses_count >
-                                                                            0 ||
-                                                                        category.children_count >
-                                                                            0
-                                                                            ? 'Cannot delete (has courses or subcategories)'
-                                                                            : 'Delete category'}
+                                                                        <p>
+                                                                            Delete
+                                                                            review
+                                                                        </p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
@@ -448,11 +547,10 @@ export default function Index({ categories, filters, stats }) {
                                     </Table>
                                 </div>
 
-                                {/* Pagination */}
                                 <div className="mt-4">
                                     <Pagination className="justify-end">
                                         <PaginationContent>
-                                            {categories.links.map((link, i) => {
+                                            {reviews.links.map((link, i) => {
                                                 if (
                                                     !link.url &&
                                                     link.label === '...'
@@ -552,11 +650,10 @@ export default function Index({ categories, filters, stats }) {
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogTitle>Delete Review</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete the category "
-                            {categoryToDelete?.name}"? This action cannot be
-                            undone.
+                            Are you sure you want to delete this review? This
+                            action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
