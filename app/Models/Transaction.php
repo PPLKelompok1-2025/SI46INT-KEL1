@@ -57,4 +57,12 @@ class Transaction extends Model
 
         return 'purchase';
     }
+
+    /**
+     * Get the promo code used for this transaction.
+     */
+    public function promoCode()
+    {
+        return $this->belongsTo(PromoCodes::class, 'promo_code_id');
+    }
 }

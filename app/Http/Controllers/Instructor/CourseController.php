@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -24,19 +23,19 @@ class CourseController extends Controller
     {
         $instructor = Auth::user();
 
-    $courses = Course::where('user_id', $instructor->id)
-        ->withCount(['lessons', 'enrollments', 'reviews'])
-        ->with('category')
-        ->orderBy('created_at', 'desc')
-        ->paginate(10);
+        $courses = Course::where('user_id', $instructor->id)
+            ->withCount(['lessons', 'enrollments', 'reviews'])
+            ->with('category')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
-    $courses->each(function ($course) {
-        $course->average_rating = $course->getAverageRatingAttribute();
-    });
+        $courses->each(function ($course) {
+            $course->average_rating = $course->getAverageRatingAttribute();
+        });
 
-    return Inertia::render('Instructor/Courses/Index', [
-        'courses' => $courses
-    ]);
+        return Inertia::render('Instructor/Courses/Index', [
+            'courses' => $courses
+        ]);
     }
 
     /**
@@ -79,32 +78,16 @@ class CourseController extends Controller
             'who_is_this_course_for' => 'nullable|array',
         ]);
 
-        // Generate slug if not provided
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
             $path = $request->file('thumbnail')->store('courses/thumbnails', 'public');
             $validated['thumbnail'] = $path;
         }
 
-        // Add instructor ID
         $validated['user_id'] = Auth::id();
-
-        // Convert arrays to JSON
-        if (isset($validated['requirements'])) {
-            $validated['requirements'] = json_encode($validated['requirements']);
-        }
-
-        if (isset($validated['what_you_will_learn'])) {
-            $validated['what_you_will_learn'] = json_encode($validated['what_you_will_learn']);
-        }
-
-        if (isset($validated['who_is_this_course_for'])) {
-            $validated['who_is_this_course_for'] = json_encode($validated['who_is_this_course_for']);
-        }
 
         $course = Course::create($validated);
 
@@ -160,7 +143,6 @@ class CourseController extends Controller
      */
     public function edit(Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to edit this course');
@@ -168,18 +150,6 @@ class CourseController extends Controller
 
         $categories = Category::orderBy('name')->get();
 
-        // Convert JSON arrays back to PHP arrays for the form
-        if ($course->requirements) {
-            $course->requirements = json_decode($course->requirements);
-        }
-
-        if ($course->what_you_will_learn) {
-            $course->what_you_will_learn = json_decode($course->what_you_will_learn);
-        }
-
-        if ($course->who_is_this_course_for) {
-            $course->who_is_this_course_for = json_decode($course->who_is_this_course_for);
-        }
 
         return Inertia::render('Instructor/Courses/Edit', [
             'course' => $course,
@@ -196,7 +166,6 @@ class CourseController extends Controller
      */
     public function update(Request $request, Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to update this course');
@@ -220,33 +189,17 @@ class CourseController extends Controller
             'who_is_this_course_for' => 'nullable|array',
         ]);
 
-        // Generate slug if not provided
         if (empty($validated['slug'])) {
             $validated['slug'] = Str::slug($validated['title']);
         }
 
-        // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
-            // Delete old thumbnail if exists
             if ($course->thumbnail) {
                 Storage::disk('public')->delete($course->thumbnail);
             }
 
             $path = $request->file('thumbnail')->store('courses/thumbnails', 'public');
             $validated['thumbnail'] = $path;
-        }
-
-        // Convert arrays to JSON
-        if (isset($validated['requirements'])) {
-            $validated['requirements'] = json_encode($validated['requirements']);
-        }
-
-        if (isset($validated['what_you_will_learn'])) {
-            $validated['what_you_will_learn'] = json_encode($validated['what_you_will_learn']);
-        }
-
-        if (isset($validated['who_is_this_course_for'])) {
-            $validated['who_is_this_course_for'] = json_encode($validated['who_is_this_course_for']);
         }
 
         $course->update($validated);
@@ -263,25 +216,21 @@ class CourseController extends Controller
      */
     public function destroy(Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to delete this course');
         }
 
-        // Check if course has enrollments
         $enrollmentsCount = $course->enrollments()->count();
         if ($enrollmentsCount > 0) {
             return redirect()->route('instructor.courses.show', $course->id)
                 ->with('error', 'Cannot delete course with active enrollments');
         }
 
-        // Delete thumbnail if exists
         if ($course->thumbnail) {
             Storage::disk('public')->delete($course->thumbnail);
         }
 
-        // Delete course
         $course->delete();
 
         return redirect()->route('instructor.courses.index')
@@ -296,7 +245,6 @@ class CourseController extends Controller
      */
     public function students(Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to view this course');
@@ -321,13 +269,11 @@ class CourseController extends Controller
      */
     public function togglePublish(Course $course)
     {
-        // Ensure the instructor owns this course
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to update this course');
         }
 
-        // Check if course has lessons before publishing
         if (!$course->is_published && $course->lessons()->count() === 0) {
             return redirect()->route('instructor.courses.show', $course->id)
                 ->with('error', 'Cannot publish a course without lessons');

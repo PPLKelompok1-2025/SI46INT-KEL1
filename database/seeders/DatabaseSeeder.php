@@ -10,6 +10,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\Note;
+use App\Models\PromoCodes;
 use App\Models\Review;
 use App\Models\Transaction;
 use App\Models\User;
@@ -102,6 +103,48 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
+        // Create promo codes
+        $promoCodes = collect();
+
+        // Create percentage discount codes
+        $promoCodes = $promoCodes->merge(
+            PromoCodes::factory()
+                ->percentage()
+                ->count(3)
+                ->create([
+                    'description' => 'Get 25% off on all courses',
+                ])
+        );
+
+        // Create fixed amount discount codes
+        $promoCodes = $promoCodes->merge(
+            PromoCodes::factory()
+                ->fixedAmount()
+                ->count(3)
+                ->create([
+                    'description' => 'Get $10 off on your purchase',
+                ])
+        );
+
+        // Create some expired promo codes
+        PromoCodes::factory()
+            ->expired()
+            ->count(2)
+            ->create([
+                'description' => 'Limited time offer (expired)',
+            ]);
+
+        // Create special promo code for testing
+        $promoCodes = $promoCodes->merge([
+            PromoCodes::factory()->create([
+                'code' => 'WELCOME50',
+                'description' => 'Welcome discount - 50% off',
+                'discount_type' => 'percentage',
+                'discount_value' => 50,
+                'max_uses' => 100,
+            ])
+        ]);
+
         // Create enrollments, reviews, notes, and certificates for students
         foreach ($students as $student) {
             // Enroll in some courses
@@ -139,10 +182,22 @@ class DatabaseSeeder extends Seeder
 
                 // Create transaction for paid courses
                 if ($course->price > 0) {
+                    // Sometimes apply a promo code (30% chance)
+                    $promoCode = null;
+                    $discountAmount = 0;
+
+                    if (fake()->boolean(30) && $promoCodes->count() > 0) {
+                        $promoCode = $promoCodes->random();
+                        $discountAmount = $promoCode->calculateDiscount($course->price);
+                        $promoCode->incrementUsage();
+                    }
+
                     Transaction::factory()->create([
                         'user_id' => $student->id,
                         'course_id' => $course->id,
-                        'amount' =>  $course->price,
+                        'amount' => $course->price,
+                        'promo_code_id' => $promoCode ? $promoCode->id : null,
+                        'discount_amount' => $discountAmount,
                     ]);
                 }
             }

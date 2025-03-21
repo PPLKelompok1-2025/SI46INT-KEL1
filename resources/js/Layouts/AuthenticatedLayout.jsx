@@ -26,6 +26,7 @@ import {
     Search,
     Settings,
     Star,
+    Ticket,
     Users,
     X,
 } from 'lucide-react';
@@ -69,6 +70,11 @@ export default function AuthenticatedLayout({ children }) {
                     name: 'Categories',
                     href: '/admin/categories',
                     icon: BookDashed,
+                },
+                {
+                    name: 'Promo Codes',
+                    href: '/admin/promo-codes',
+                    icon: Ticket,
                 },
                 { name: 'Settings', href: '/admin/settings', icon: Settings },
             ];

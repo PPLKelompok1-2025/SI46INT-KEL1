@@ -29,6 +29,7 @@ use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Instructor\ReviewController as InstructorReviewController;
+use App\Http\Controllers\Admin\PromoCodeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -108,6 +109,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
         Route::get('/reports/users', [ReportController::class, 'users'])->name('reports.users');
         Route::get('/reports/courses', [ReportController::class, 'courses'])->name('reports.courses');
+
+        // Promo code management
+        Route::resource('promo-codes', PromoCodeController::class);
+        Route::patch('/promo-codes/{promoCode}/toggle-active', [PromoCodeController::class, 'toggleActive'])->name('promo-codes.toggle-active');
     });
 
     // Instructor routes
@@ -131,7 +136,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
         Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
         Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
-        // Route::get('lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
         Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
         Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
         Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
