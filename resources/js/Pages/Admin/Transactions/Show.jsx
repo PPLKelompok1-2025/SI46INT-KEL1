@@ -55,13 +55,14 @@ export default function Show({ transaction, relatedTransactions }) {
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" asChild>
-                            <Link href={route('admin.transactions.index')}>
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to Transactions
-                            </Link>
-                        </Button>
+                    <div className="flex flex-col gap-4">
+                        <Link
+                            href={route('admin.transactions.index')}
+                            className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back to Transactions
+                        </Link>
                         <h1 className="text-3xl font-bold">
                             Transaction Details
                         </h1>

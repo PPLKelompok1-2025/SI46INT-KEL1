@@ -96,13 +96,16 @@ export default function Show({ user, tab = 'overview' }) {
             <Head title={`User: ${user.name}`} />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <Button asChild variant="ghost" size="icon">
-                            <Link href={route('admin.users.index')}>
-                                <ArrowLeft className="h-4 w-4" />
-                            </Link>
-                        </Button>
+                <div className="flex justify-between">
+                    <div className="flex flex-col gap-4">
+                        <Link
+                            href={route('admin.users.index')}
+                            className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Back to Users
+                        </Link>
+
                         <h1 className="text-3xl font-bold">
                             User Profile: {user.name}
                         </h1>

@@ -19,30 +19,65 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Category::with('parent')
-            ->withCount('courses')
-            ->withCount('children');
+        $search = $request->input('search');
+        $parent = $request->input('parent');
+        $sort = $request->input('sort', 'name_asc');
 
-        // Search filter
-        if ($request->has('search')) {
-            $search = $request->get('search');
+        $query = Category::query()
+            ->withCount(['courses', 'children'])
+            ->with('parent');
+
+        if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
             });
         }
 
-        // Sort the results
-        $sortField = $request->get('sort_field', 'name');
-        $sortDirection = $request->get('sort_direction', 'asc');
-        $query->orderBy($sortField, $sortDirection);
+        if ($parent === 'parent') {
+            $query->whereNull('parent_id');
+        } elseif ($parent === 'child') {
+            $query->whereNotNull('parent_id');
+        }
 
-        // Paginate the results
+        switch ($sort) {
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'created_at_desc':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'created_at_asc':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'courses_count_desc':
+                $query->orderByDesc('courses_count');
+                break;
+            case 'courses_count_asc':
+                $query->orderBy('courses_count', 'asc');
+                break;
+            case 'name_asc':
+            default:
+                $query->orderBy('name', 'asc');
+                break;
+        }
+
         $categories = $query->paginate(10)->withQueryString();
+
+        $stats = [
+            'total' => Category::count(),
+            'parent' => Category::whereNull('parent_id')->count(),
+            'totalCourses' => Course::count(),
+        ];
 
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $categories,
-            'filters' => $request->only(['search', 'sort_field', 'sort_direction']),
+            'filters' => [
+                'search' => $search,
+                'parent' => $parent,
+                'sort' => $sort,
+            ],
+            'stats' => $stats
         ]);
     }
 

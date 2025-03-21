@@ -1,12 +1,36 @@
 import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/Components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/Components/ui/pagination';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/ui/select';
 import {
     Table,
     TableBody,
@@ -21,12 +45,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
     CheckCircle,
-    ChevronDown,
+    Edit,
     Eye,
-    Filter,
-    MoreHorizontal,
-    PenSquare,
-    Plus,
+    PlusCircle,
     Search,
     Tag,
     Trash,
@@ -36,6 +57,8 @@ import { useState } from 'react';
 
 export default function Index({ promoCodes, filters, stats }) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [promoCodeToDelete, setPromoCodeToDelete] = useState(null);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -97,16 +120,33 @@ export default function Index({ promoCodes, filters, stats }) {
         return false;
     };
 
+    const confirmDelete = (promoCode) => {
+        if (promoCode.transactions_count > 0) {
+            return;
+        }
+        setPromoCodeToDelete(promoCode);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDelete = () => {
+        router.delete(
+            route('admin.promo-codes.destroy', promoCodeToDelete.id),
+            {
+                onSuccess: () => setDeleteDialogOpen(false),
+            },
+        );
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Promo Codes" />
 
-            <div className="flex flex-col gap-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold">Promo Codes</h1>
                     <Button asChild>
                         <Link href={route('admin.promo-codes.create')}>
-                            <Plus className="mr-2 h-4 w-4" />
+                            <PlusCircle className="mr-2 h-4 w-4" />
                             Create Promo Code
                         </Link>
                     </Button>
@@ -154,314 +194,378 @@ export default function Index({ promoCodes, filters, stats }) {
                     </Card>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4 md:flex-row">
-                        <form
-                            onSubmit={handleSearch}
-                            className="relative flex-1"
-                        >
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                            <Input
-                                placeholder="Search promo codes..."
-                                className="w-full pl-10"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </form>
-                        <div className="flex gap-2">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        <Filter className="mr-2 h-4 w-4" />
-                                        Status{' '}
-                                        {filters.status &&
-                                            `(${filters.status})`}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleStatusChange('active')
-                                        }
-                                    >
-                                        <CheckCircle
-                                            className={`mr-2 h-4 w-4 ${
-                                                filters.status === 'active'
-                                                    ? 'text-primary'
-                                                    : ''
-                                            }`}
-                                        />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>All Promo Codes</CardTitle>
+                        <CardDescription>
+                            Manage promotional codes across the platform
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search promo codes..."
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        handleSearch(e);
+                                    }}
+                                />
+                            </div>
+                            <Select
+                                value={filters.status || 'all'}
+                                onValueChange={(value) =>
+                                    handleStatusChange(value)
+                                }
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="active">
                                         Active
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleStatusChange('expired')
-                                        }
-                                    >
-                                        <XCircle
-                                            className={`mr-2 h-4 w-4 ${
-                                                filters.status === 'expired'
-                                                    ? 'text-primary'
-                                                    : ''
-                                            }`}
-                                        />
+                                    </SelectItem>
+                                    <SelectItem value="expired">
                                         Expired
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        Sort
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('created_at_desc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={filters.sort || 'created_at_desc'}
+                                onValueChange={handleSortChange}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="created_at_desc">
                                         Newest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('created_at_asc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                    <SelectItem value="created_at_asc">
                                         Oldest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('code_asc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                    <SelectItem value="code_asc">
                                         Code (A-Z)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('code_desc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                    <SelectItem value="code_desc">
                                         Code (Z-A)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('usage_desc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                    <SelectItem value="usage_desc">
                                         Most Used
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleSortChange('usage_asc')
-                                        }
-                                    >
+                                    </SelectItem>
+                                    <SelectItem value="usage_asc">
                                         Least Used
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {(filters.search || filters.status) && (
-                                <Button variant="ghost" onClick={resetFilters}>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {(filters.search || filters.status !== 'all') && (
+                                <Button
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    className="whitespace-nowrap"
+                                >
                                     Clear Filters
                                 </Button>
                             )}
                         </div>
-                    </div>
 
-                    <div className="rounded-lg border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Value</TableHead>
-                                    <TableHead>Usage</TableHead>
-                                    <TableHead>Valid Until</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="w-16">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {promoCodes.data.length === 0 && (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={7}
-                                            className="h-32 text-center"
-                                        >
-                                            No promo codes found
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                                {promoCodes.data.map((promoCode) => (
-                                    <TableRow key={promoCode.id}>
-                                        <TableCell className="font-medium">
-                                            <div>{promoCode.code}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {promoCode.description}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {promoCode.discount_type ===
-                                            'percentage'
-                                                ? 'Percentage'
-                                                : 'Fixed'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {promoCode.discount_type ===
-                                            'percentage'
-                                                ? `${promoCode.discount_value}%`
-                                                : formatCurrency(
-                                                      promoCode.discount_value,
-                                                  )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {promoCode.used_count}/
-                                                {promoCode.max_uses ?? '∞'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {promoCode.transactions_count}{' '}
-                                                transactions
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDate(promoCode.end_date)}
-                                        </TableCell>
-                                        <TableCell>
-                                            {isExpired(promoCode) ? (
-                                                <span className="flex items-center text-destructive">
-                                                    <XCircle className="mr-1 h-4 w-4" />
-                                                    Expired
-                                                </span>
-                                            ) : (
-                                                <span className="flex items-center text-green-600">
-                                                    <CheckCircle className="mr-1 h-4 w-4" />
-                                                    Active
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <span className="sr-only">
-                                                            Open menu
-                                                        </span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem asChild>
-                                                        <Link
-                                                            href={route(
-                                                                'admin.promo-codes.show',
-                                                                promoCode.id,
-                                                            )}
-                                                        >
-                                                            <Eye className="mr-2 h-4 w-4" />
-                                                            View Details
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem asChild>
-                                                        <Link
-                                                            href={route(
-                                                                'admin.promo-codes.edit',
-                                                                promoCode.id,
-                                                            )}
-                                                        >
-                                                            <PenSquare className="mr-2 h-4 w-4" />
-                                                            Edit
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            toggleActive(
-                                                                promoCode,
-                                                            )
-                                                        }
-                                                    >
-                                                        {promoCode.is_active ? (
-                                                            <>
-                                                                <XCircle className="mr-2 h-4 w-4" />
-                                                                Deactivate
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                                Activate
-                                                            </>
-                                                        )}
-                                                    </DropdownMenuItem>
-                                                    {promoCode.transactions_count ===
-                                                        0 && (
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                if (
-                                                                    confirm(
-                                                                        'Are you sure you want to delete this promo code?',
-                                                                    )
-                                                                ) {
-                                                                    router.delete(
-                                                                        route(
-                                                                            'admin.promo-codes.destroy',
-                                                                            promoCode.id,
-                                                                        ),
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="text-destructive"
-                                                        >
-                                                            <Trash className="mr-2 h-4 w-4" />
-                                                            Delete
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    {promoCodes.links && promoCodes.links.length > 3 && (
-                        <div className="mt-4 flex justify-center">
-                            <div className="flex space-x-1">
-                                {promoCodes.links.map((link, i) => {
-                                    if (link.url === null) return null;
-
-                                    return (
-                                        <Button
-                                            key={i}
-                                            variant={
-                                                link.active
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                            onClick={() =>
-                                                router.visit(link.url)
-                                            }
-                                            disabled={link.active}
-                                            dangerouslySetInnerHTML={{
-                                                __html: link.label,
-                                            }}
-                                        />
-                                    );
-                                })}
+                        {promoCodes.data.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-8 text-center">
+                                <Tag className="mb-4 h-12 w-12 text-muted-foreground" />
+                                <h3 className="mb-2 text-lg font-medium">
+                                    No promo codes found
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    {filters.search || filters.status !== 'all'
+                                        ? "Try adjusting your search or filter to find what you're looking for."
+                                        : 'There are no promo codes in the system yet.'}
+                                </p>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <>
+                                <div className="rounded-lg border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Code</TableHead>
+                                                <TableHead>Type</TableHead>
+                                                <TableHead>Value</TableHead>
+                                                <TableHead>Usage</TableHead>
+                                                <TableHead>
+                                                    Valid Until
+                                                </TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">
+                                                    Actions
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {promoCodes.data.map(
+                                                (promoCode) => (
+                                                    <TableRow
+                                                        key={promoCode.id}
+                                                    >
+                                                        <TableCell className="font-medium">
+                                                            <div>
+                                                                {promoCode.code}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {
+                                                                    promoCode.description
+                                                                }
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {promoCode.discount_type ===
+                                                            'percentage'
+                                                                ? 'Percentage'
+                                                                : 'Fixed'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {promoCode.discount_type ===
+                                                            'percentage'
+                                                                ? `${promoCode.discount_value}%`
+                                                                : formatCurrency(
+                                                                      promoCode.discount_value,
+                                                                  )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div>
+                                                                {
+                                                                    promoCode.used_count
+                                                                }
+                                                                /
+                                                                {promoCode.max_uses ??
+                                                                    '∞'}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {
+                                                                    promoCode.transactions_count
+                                                                }{' '}
+                                                                transactions
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {formatDate(
+                                                                promoCode.end_date,
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {isExpired(
+                                                                promoCode,
+                                                            ) ? (
+                                                                <span className="flex items-center text-destructive">
+                                                                    <XCircle className="mr-1 h-4 w-4" />
+                                                                    Expired
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center text-green-600">
+                                                                    <CheckCircle className="mr-1 h-4 w-4" />
+                                                                    Active
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end space-x-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    asChild
+                                                                >
+                                                                    <Link
+                                                                        href={route(
+                                                                            'admin.promo-codes.show',
+                                                                            promoCode.id,
+                                                                        )}
+                                                                    >
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    asChild
+                                                                >
+                                                                    <Link
+                                                                        href={route(
+                                                                            'admin.promo-codes.edit',
+                                                                            promoCode.id,
+                                                                        )}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        toggleActive(
+                                                                            promoCode,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {promoCode.is_active ? (
+                                                                        <XCircle className="h-4 w-4" />
+                                                                    ) : (
+                                                                        <CheckCircle className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        confirmDelete(
+                                                                            promoCode,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        promoCode.transactions_count >
+                                                                        0
+                                                                    }
+                                                                >
+                                                                    <Trash className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                {/* Pagination */}
+                                <div className="mt-4">
+                                    <Pagination className="justify-end">
+                                        <PaginationContent>
+                                            {promoCodes.links.map((link, i) => {
+                                                if (
+                                                    !link.url &&
+                                                    link.label === '...'
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationEllipsis />
+                                                        </PaginationItem>
+                                                    );
+                                                }
+
+                                                if (
+                                                    link.label.includes(
+                                                        'Previous',
+                                                    )
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationPrevious
+                                                                onClick={() =>
+                                                                    link.url &&
+                                                                    router.visit(
+                                                                        link.url,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    !link.url
+                                                                }
+                                                                className={
+                                                                    !link.url
+                                                                        ? 'pointer-events-none opacity-50'
+                                                                        : 'cursor-pointer'
+                                                                }
+                                                            />
+                                                        </PaginationItem>
+                                                    );
+                                                }
+
+                                                if (
+                                                    link.label.includes('Next')
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationNext
+                                                                onClick={() =>
+                                                                    link.url &&
+                                                                    router.visit(
+                                                                        link.url,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    !link.url
+                                                                }
+                                                                className={
+                                                                    !link.url
+                                                                        ? 'pointer-events-none opacity-50'
+                                                                        : 'cursor-pointer'
+                                                                }
+                                                            />
+                                                        </PaginationItem>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationLink
+                                                            onClick={() =>
+                                                                link.url &&
+                                                                router.visit(
+                                                                    link.url,
+                                                                )
+                                                            }
+                                                            isActive={
+                                                                link.active
+                                                            }
+                                                            disabled={!link.url}
+                                                            className={
+                                                                !link.url
+                                                                    ? 'pointer-events-none opacity-50'
+                                                                    : 'cursor-pointer'
+                                                            }
+                                                        >
+                                                            {link.label}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                );
+                                            })}
+                                        </PaginationContent>
+                                    </Pagination>
+                                </div>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
+
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Promo Code</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete the promo code "
+                            {promoCodeToDelete?.code}"? This action cannot be
+                            undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AuthenticatedLayout>
     );
 }

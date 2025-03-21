@@ -40,6 +40,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { debounce } from 'lodash';
@@ -254,54 +260,105 @@ export default function Index({ auth, users, filters }) {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end space-x-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.users.show',
-                                                                    user.id,
-                                                                )}
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.users.edit',
-                                                                    user.id,
-                                                                )}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() =>
-                                                                confirmDelete(
-                                                                    user,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                user.id ===
-                                                                    auth.user
-                                                                        .id ||
-                                                                user.courses_count >
-                                                                    0 ||
-                                                                user.enrollments_count >
-                                                                    0
-                                                            }
-                                                        >
-                                                            <Trash className="h-4 w-4" />
-                                                        </Button>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        asChild
+                                                                    >
+                                                                        <Link
+                                                                            href={route(
+                                                                                'admin.users.show',
+                                                                                user.id,
+                                                                            )}
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Link>
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>
+                                                                        View
+                                                                        user
+                                                                        details
+                                                                    </p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        asChild
+                                                                    >
+                                                                        <Link
+                                                                            href={route(
+                                                                                'admin.users.edit',
+                                                                                user.id,
+                                                                            )}
+                                                                        >
+                                                                            <Edit className="h-4 w-4" />
+                                                                        </Link>
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>
+                                                                        Edit
+                                                                        user
+                                                                    </p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        onClick={() =>
+                                                                            confirmDelete(
+                                                                                user,
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            user.id ===
+                                                                                auth
+                                                                                    .user
+                                                                                    .id ||
+                                                                            user.courses_count >
+                                                                                0 ||
+                                                                            user.enrollments_count >
+                                                                                0
+                                                                        }
+                                                                    >
+                                                                        <Trash className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    {user.id ===
+                                                                    auth.user.id
+                                                                        ? 'Cannot delete yourself'
+                                                                        : user.courses_count >
+                                                                                0 ||
+                                                                            user.enrollments_count >
+                                                                                0
+                                                                          ? 'Cannot delete (has courses or enrollments)'
+                                                                          : 'Delete user'}
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

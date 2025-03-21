@@ -20,6 +20,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    ArrowLeft,
     BookOpen,
     CheckCircle,
     Edit,
@@ -65,56 +66,74 @@ export default function Show({ course, tab }) {
             <Head title={course.title} />
 
             <div className="space-y-6">
-                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold">{course.title}</h1>
-                        <div className="mt-2 flex items-center text-muted-foreground">
-                            <span className="flex items-center">
-                                <User className="mr-1 h-4 w-4" />
-                                {course.user.name}
-                            </span>
-                            <span className="mx-2">•</span>
-                            <span>
-                                {course.category?.name || 'Uncategorized'}
-                            </span>
-                            <span className="mx-2">•</span>
-                            <span className="flex items-center">
-                                <Star className="mr-1 h-4 w-4 text-yellow-500" />
-                                {Number(course.average_rating).toFixed(1)}
-                            </span>
+                <div className="flex flex-col gap-4">
+                    <Link
+                        href={route('admin.courses.index')}
+                        className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Courses
+                    </Link>
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                        <div>
+                            <h1 className="text-3xl font-bold">
+                                {course.title}
+                            </h1>
+                            <div className="mt-2 flex items-center text-muted-foreground">
+                                <span className="flex items-center">
+                                    <User className="mr-1 h-4 w-4" />
+                                    {course.user.name}
+                                </span>
+                                <span className="mx-2">•</span>
+                                <span>
+                                    {course.category?.name || 'Uncategorized'}
+                                </span>
+                                <span className="mx-2">•</span>
+                                <span className="flex items-center">
+                                    <Star className="mr-1 h-4 w-4 text-yellow-500" />
+                                    {Number(course.average_rating).toFixed(1)}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant={course.is_approved ? 'default' : 'outline'}
-                            onClick={handleApprove}
-                        >
-                            {course.is_approved ? (
-                                <>
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Unapprove
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Approve
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            variant={
-                                course.is_featured ? 'secondary' : 'outline'
-                            }
-                            onClick={handleFeature}
-                        >
-                            {course.is_featured ? 'Unfeature' : 'Feature'}
-                        </Button>
-                        <Button asChild>
-                            <Link href={route('admin.courses.edit', course.id)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                variant={
+                                    course.is_approved ? 'default' : 'outline'
+                                }
+                                onClick={handleApprove}
+                            >
+                                {course.is_approved ? (
+                                    <>
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Unapprove
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Approve
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                variant={
+                                    course.is_featured ? 'secondary' : 'outline'
+                                }
+                                onClick={handleFeature}
+                            >
+                                {course.is_featured ? 'Unfeature' : 'Feature'}
+                            </Button>
+                            <Button asChild>
+                                <Link
+                                    href={route(
+                                        'admin.courses.edit',
+                                        course.id,
+                                    )}
+                                >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
 

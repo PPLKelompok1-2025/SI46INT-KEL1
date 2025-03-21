@@ -28,11 +28,11 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import {
+    ArrowLeft,
     BookOpen,
-    ChevronLeft,
-    Edit,
     Folder,
     FolderTree,
+    PenSquare,
     Star,
 } from 'lucide-react';
 
@@ -42,21 +42,28 @@ export default function Show({ category, courses }) {
             <Head title={`Category: ${category.name}`} />
 
             <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" asChild className="gap-1">
-                        <a href={route('admin.categories.index')}>
-                            <ChevronLeft className="h-4 w-4" />
-                            Back to Categories
-                        </a>
-                    </Button>
-                    <h1 className="text-3xl font-bold">{category.name}</h1>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link
-                            href={route('admin.categories.edit', category.id)}
-                        >
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                        </Link>
-                    </Button>
+                <div className="flex flex-col gap-4">
+                    <Link
+                        href={route('admin.categories.index')}
+                        className="mb-2 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft className="mr-1 h-4 w-4" />
+                        Back to Categories
+                    </Link>
+                    <div className="flex items-center justify-between gap-4">
+                        <h1 className="text-3xl font-bold">{category.name}</h1>
+                        <Button asChild variant="outline">
+                            <Link
+                                href={route(
+                                    'admin.categories.edit',
+                                    category.id,
+                                )}
+                            >
+                                <PenSquare className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">

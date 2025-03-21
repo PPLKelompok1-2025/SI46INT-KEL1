@@ -26,6 +26,13 @@ import {
     PaginationPrevious,
 } from '@/Components/ui/pagination';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -33,10 +40,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import {
+    BookOpen,
     Edit,
     Eye,
     Folder,
@@ -47,10 +61,12 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export default function Index({ categories, filters }) {
+export default function Index({ categories, filters, stats }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(filters?.search || '');
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [parentFilter, setParentFilter] = useState(filters.parent || 'all');
+    const [sortFilter, setSortFilter] = useState(filters.sort || 'name_asc');
 
     const confirmDelete = (category) => {
         setCategoryToDelete(category);
@@ -67,15 +83,42 @@ export default function Index({ categories, filters }) {
     };
 
     const handleSearch = debounce((value) => {
-        router.get(
-            route('admin.categories.index'),
-            { search: value },
-            { preserveState: true },
-        );
+        applyFilters({ search: value });
     }, 300);
 
+    const applyFilters = (newFilters) => {
+        router.get(
+            route('admin.categories.index'),
+            {
+                ...filters,
+                ...newFilters,
+            },
+            { preserveState: true, preserveScroll: true },
+        );
+    };
+
+    const resetFilters = () => {
+        router.get(
+            route('admin.categories.index'),
+            {},
+            { preserveState: true },
+        );
+    };
+
+    const handleParentChange = (value) => {
+        setParentFilter(value);
+        applyFilters({ parent: value });
+    };
+
+    const handleSortChange = (value) => {
+        setSortFilter(value);
+        applyFilters({ sort: value });
+    };
+
     useEffect(() => {
-        setSearchTerm(filters?.search || '');
+        setSearchTerm(filters.search || '');
+        setParentFilter(filters.parent || 'all');
+        setSortFilter(filters.sort || 'name_asc');
     }, [filters]);
 
     return (
@@ -92,6 +135,48 @@ export default function Index({ categories, filters }) {
                     </Button>
                 </div>
 
+                <div className="grid gap-6 md:grid-cols-3">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Categories
+                            </CardTitle>
+                            <Folder className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {stats.total}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Parent Categories
+                            </CardTitle>
+                            <FolderTree className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {stats.parent}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Courses
+                            </CardTitle>
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {stats.totalCourses}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 <Card>
                     <CardHeader>
                         <CardTitle>All Categories</CardTitle>
@@ -100,8 +185,8 @@ export default function Index({ categories, filters }) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="mb-6">
-                            <div className="relative">
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+                            <div className="relative flex-1">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     type="search"
@@ -114,6 +199,62 @@ export default function Index({ categories, filters }) {
                                     }}
                                 />
                             </div>
+                            <Select
+                                value={parentFilter}
+                                onValueChange={handleParentChange}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Categories
+                                    </SelectItem>
+                                    <SelectItem value="parent">
+                                        Parent Categories
+                                    </SelectItem>
+                                    <SelectItem value="child">
+                                        Sub Categories
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={sortFilter}
+                                onValueChange={handleSortChange}
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="name_asc">
+                                        Name (A-Z)
+                                    </SelectItem>
+                                    <SelectItem value="name_desc">
+                                        Name (Z-A)
+                                    </SelectItem>
+                                    <SelectItem value="created_at_desc">
+                                        Newest First
+                                    </SelectItem>
+                                    <SelectItem value="created_at_asc">
+                                        Oldest First
+                                    </SelectItem>
+                                    <SelectItem value="courses_count_desc">
+                                        Most Courses
+                                    </SelectItem>
+                                    <SelectItem value="courses_count_asc">
+                                        Least Courses
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {(filters.search || filters.parent !== 'all') && (
+                                <Button
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    className="whitespace-nowrap"
+                                >
+                                    Clear Filters
+                                </Button>
+                            )}
                         </div>
 
                         {categories.data.length === 0 ? (
@@ -123,248 +264,285 @@ export default function Index({ categories, filters }) {
                                     No categories found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {searchTerm
-                                        ? "Try adjusting your search to find what you're looking for."
+                                    {filters.search || filters.parent !== 'all'
+                                        ? "Try adjusting your search or filter to find what you're looking for."
                                         : 'There are no categories in the system yet.'}
                                 </p>
                             </div>
                         ) : (
                             <>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead>Parent</TableHead>
-                                            <TableHead className="text-center">
-                                                Courses
-                                            </TableHead>
-                                            <TableHead className="text-center">
-                                                Subcategories
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                Actions
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {categories.data.map((category) => (
-                                            <TableRow key={category.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                                                            {category.icon ? (
-                                                                <span className="text-primary">
-                                                                    {
-                                                                        category.icon
-                                                                    }
-                                                                </span>
-                                                            ) : (
-                                                                <Folder className="h-5 w-5 text-primary" />
-                                                            )}
+                                <div className="rounded-lg border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>
+                                                    Description
+                                                </TableHead>
+                                                <TableHead>Parent</TableHead>
+                                                <TableHead className="text-center">
+                                                    Courses
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    Subcategories
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Actions
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {categories.data.map((category) => (
+                                                <TableRow key={category.id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                                                                {category.icon ? (
+                                                                    <span className="text-primary">
+                                                                        {
+                                                                            category.icon
+                                                                        }
+                                                                    </span>
+                                                                ) : (
+                                                                    <Folder className="h-5 w-5 text-primary" />
+                                                                )}
+                                                            </div>
+                                                            <div className="font-medium">
+                                                                {category.name}
+                                                            </div>
                                                         </div>
-                                                        <div className="font-medium">
-                                                            {category.name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="max-w-xs truncate">
+                                                            {category.description ||
+                                                                'No description'}
                                                         </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="max-w-xs truncate">
-                                                        {category.description ||
-                                                            'No description'}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {category.parent ? (
-                                                        <Badge variant="outline">
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {category.parent ? (
+                                                            <Badge variant="outline">
+                                                                {
+                                                                    category
+                                                                        .parent
+                                                                        .name
+                                                                }
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">
+                                                                None
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant="secondary">
                                                             {
-                                                                category.parent
-                                                                    .name
+                                                                category.courses_count
                                                             }
                                                         </Badge>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            None
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="secondary">
-                                                        {category.courses_count}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="secondary">
-                                                        {
-                                                            category.children_count
-                                                        }
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end space-x-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.categories.show',
-                                                                    category.id,
-                                                                )}
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.categories.edit',
-                                                                    category.id,
-                                                                )}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() =>
-                                                                confirmDelete(
-                                                                    category,
-                                                                )
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant="secondary">
+                                                            {
+                                                                category.children_count
                                                             }
-                                                            disabled={
-                                                                category.courses_count >
-                                                                    0 ||
-                                                                category.children_count >
-                                                                    0
-                                                            }
-                                                        >
-                                                            <Trash className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end space-x-2">
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            asChild
+                                                                        >
+                                                                            <Link
+                                                                                href={route(
+                                                                                    'admin.categories.show',
+                                                                                    category.id,
+                                                                                )}
+                                                                            >
+                                                                                <Eye className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>
+                                                                            View
+                                                                            details
+                                                                        </p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            asChild
+                                                                        >
+                                                                            <Link
+                                                                                href={route(
+                                                                                    'admin.categories.edit',
+                                                                                    category.id,
+                                                                                )}
+                                                                            >
+                                                                                <Edit className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>
+                                                                            Edit
+                                                                            category
+                                                                        </p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger
+                                                                        asChild
+                                                                    >
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() =>
+                                                                                confirmDelete(
+                                                                                    category,
+                                                                                )
+                                                                            }
+                                                                            disabled={
+                                                                                category.courses_count >
+                                                                                    0 ||
+                                                                                category.children_count >
+                                                                                    0
+                                                                            }
+                                                                        >
+                                                                            <Trash className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        {category.courses_count >
+                                                                            0 ||
+                                                                        category.children_count >
+                                                                            0
+                                                                            ? 'Cannot delete (has courses or subcategories)'
+                                                                            : 'Delete category'}
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
                                 {/* Pagination */}
-                                {categories.links && (
-                                    <div className="mt-4">
-                                        <Pagination className="justify-end">
-                                            <PaginationContent>
-                                                {categories.links.map(
-                                                    (link, i) => {
-                                                        if (
-                                                            !link.url &&
-                                                            link.label === '...'
-                                                        ) {
-                                                            return (
-                                                                <PaginationItem
-                                                                    key={i}
-                                                                >
-                                                                    <PaginationEllipsis />
-                                                                </PaginationItem>
-                                                            );
-                                                        }
+                                <div className="mt-4">
+                                    <Pagination className="justify-end">
+                                        <PaginationContent>
+                                            {categories.links.map((link, i) => {
+                                                if (
+                                                    !link.url &&
+                                                    link.label === '...'
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationEllipsis />
+                                                        </PaginationItem>
+                                                    );
+                                                }
 
-                                                        if (
-                                                            link.label.includes(
-                                                                'Previous',
-                                                            )
-                                                        ) {
-                                                            return (
-                                                                <PaginationItem
-                                                                    key={i}
-                                                                >
-                                                                    <PaginationPrevious
-                                                                        onClick={() =>
-                                                                            link.url &&
-                                                                            router.visit(
-                                                                                link.url,
-                                                                            )
-                                                                        }
-                                                                        disabled={
-                                                                            !link.url
-                                                                        }
-                                                                        className={
-                                                                            !link.url
-                                                                                ? 'pointer-events-none opacity-50'
-                                                                                : 'cursor-pointer'
-                                                                        }
-                                                                    />
-                                                                </PaginationItem>
-                                                            );
-                                                        }
+                                                if (
+                                                    link.label.includes(
+                                                        'Previous',
+                                                    )
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationPrevious
+                                                                onClick={() =>
+                                                                    link.url &&
+                                                                    router.visit(
+                                                                        link.url,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    !link.url
+                                                                }
+                                                                className={
+                                                                    !link.url
+                                                                        ? 'pointer-events-none opacity-50'
+                                                                        : 'cursor-pointer'
+                                                                }
+                                                            />
+                                                        </PaginationItem>
+                                                    );
+                                                }
 
-                                                        if (
-                                                            link.label.includes(
-                                                                'Next',
-                                                            )
-                                                        ) {
-                                                            return (
-                                                                <PaginationItem
-                                                                    key={i}
-                                                                >
-                                                                    <PaginationNext
-                                                                        onClick={() =>
-                                                                            link.url &&
-                                                                            router.visit(
-                                                                                link.url,
-                                                                            )
-                                                                        }
-                                                                        disabled={
-                                                                            !link.url
-                                                                        }
-                                                                        className={
-                                                                            !link.url
-                                                                                ? 'pointer-events-none opacity-50'
-                                                                                : 'cursor-pointer'
-                                                                        }
-                                                                    />
-                                                                </PaginationItem>
-                                                            );
-                                                        }
+                                                if (
+                                                    link.label.includes('Next')
+                                                ) {
+                                                    return (
+                                                        <PaginationItem key={i}>
+                                                            <PaginationNext
+                                                                onClick={() =>
+                                                                    link.url &&
+                                                                    router.visit(
+                                                                        link.url,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    !link.url
+                                                                }
+                                                                className={
+                                                                    !link.url
+                                                                        ? 'pointer-events-none opacity-50'
+                                                                        : 'cursor-pointer'
+                                                                }
+                                                            />
+                                                        </PaginationItem>
+                                                    );
+                                                }
 
-                                                        return (
-                                                            <PaginationItem
-                                                                key={i}
-                                                            >
-                                                                <PaginationLink
-                                                                    onClick={() =>
-                                                                        link.url &&
-                                                                        router.visit(
-                                                                            link.url,
-                                                                        )
-                                                                    }
-                                                                    isActive={
-                                                                        link.active
-                                                                    }
-                                                                    disabled={
-                                                                        !link.url
-                                                                    }
-                                                                    className={
-                                                                        !link.url
-                                                                            ? 'pointer-events-none opacity-50'
-                                                                            : 'cursor-pointer'
-                                                                    }
-                                                                >
-                                                                    {link.label}
-                                                                </PaginationLink>
-                                                            </PaginationItem>
-                                                        );
-                                                    },
-                                                )}
-                                            </PaginationContent>
-                                        </Pagination>
-                                    </div>
-                                )}
+                                                return (
+                                                    <PaginationItem key={i}>
+                                                        <PaginationLink
+                                                            onClick={() =>
+                                                                link.url &&
+                                                                router.visit(
+                                                                    link.url,
+                                                                )
+                                                            }
+                                                            isActive={
+                                                                link.active
+                                                            }
+                                                            disabled={!link.url}
+                                                            className={
+                                                                !link.url
+                                                                    ? 'pointer-events-none opacity-50'
+                                                                    : 'cursor-pointer'
+                                                            }
+                                                        >
+                                                            {link.label}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                );
+                                            })}
+                                        </PaginationContent>
+                                    </Pagination>
+                                </div>
                             </>
                         )}
                     </CardContent>
