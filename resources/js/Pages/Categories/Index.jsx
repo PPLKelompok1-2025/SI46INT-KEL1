@@ -19,7 +19,7 @@ import {
     Layers,
     Search,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function Index({
     parentCategories,
@@ -48,7 +48,7 @@ export default function Index({
         debouncedSearch(value);
     };
 
-    const applyFilters = () => {
+    const applyFilters = useCallback(() => {
         router.get(
             route('categories.index'),
             {
@@ -63,7 +63,7 @@ export default function Index({
                 only: [],
             },
         );
-    };
+    }, [data.search, data.sort]);
 
     const handleFilterChange = (field, value) => {
         setData((prevData) => ({
@@ -87,7 +87,6 @@ export default function Index({
         );
     };
 
-    // Handle the reset filters button
     const resetFilters = () => {
         router.get(route('categories.index'), {}, { preserveState: false });
     };

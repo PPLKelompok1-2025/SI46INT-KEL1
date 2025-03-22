@@ -50,15 +50,47 @@ class CourseController extends Controller
             }
         }
 
-        $sortField = $request->get('sort_field', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
+        // Handle sorting with a single 'sort' parameter
+        if ($request->has('sort') && $request->sort) {
+            $sortField = 'created_at';
+            $sortDirection = 'desc';
+
+            if ($request->sort === 'created_at_asc') {
+                $sortField = 'created_at';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'created_at_desc') {
+                $sortField = 'created_at';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'title_asc') {
+                $sortField = 'title';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'title_desc') {
+                $sortField = 'title';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'price_asc') {
+                $sortField = 'price';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'price_desc') {
+                $sortField = 'price';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'enrollments_desc') {
+                $sortField = 'enrollments_count';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'enrollments_asc') {
+                $sortField = 'enrollments_count';
+                $sortDirection = 'asc';
+            }
+
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
         $courses = $query->paginate(10)->withQueryString();
 
-        // Calculate and append average rating to each course
+        // Add average rating as an appended attribute
         foreach ($courses as $course) {
-            $course->average_rating = $course->getAverageRatingAttribute();
+            $course->append('average_rating');
         }
 
         // Get categories for filter dropdown
@@ -67,7 +99,12 @@ class CourseController extends Controller
         return Inertia::render('Admin/Courses/Index', [
             'courses' => $courses,
             'categories' => $categories,
-            'filters' => $request->only(['search', 'category', 'status', 'sort_field', 'sort_direction']),
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'category' => $request->input('category', 'all'),
+                'status' => $request->input('status', 'all'),
+                'sort' => $request->input('sort', 'created_at_desc'),
+            ],
         ]);
     }
 
@@ -163,8 +200,8 @@ class CourseController extends Controller
             $course->setRelation('reviews', $reviews);
         }
 
-        // Calculate average rating
-        $course->average_rating = $course->getAverageRatingAttribute();
+        // Add average rating as an appended attribute
+        $course->append('average_rating');
 
         return Inertia::render('Admin/Courses/Show', [
             'course' => $course,

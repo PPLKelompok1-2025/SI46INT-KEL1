@@ -42,7 +42,7 @@ import {
 } from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import {
     BookOpen,
@@ -55,65 +55,75 @@ import {
     Trash,
     XCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function Index({ courses, categories, filters }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [categoryFilter, setCategoryFilter] = useState(
-        filters.category || 'all',
-    );
-    const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
+
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        category: filters.category || 'all',
+        status: filters.status || 'all',
+        sort: filters.sort || 'created_at_desc',
+    });
 
     const confirmDelete = (course) => {
         setCourseToDelete(course);
         setDeleteDialogOpen(true);
     };
 
-    const handleSearch = debounce((value) => {
-        router.get(
-            route('admin.courses.index'),
-            {
-                search: value,
-                category: categoryFilter,
-                status: statusFilter,
-            },
-            { preserveState: true },
-        );
-    }, 300);
+    const debouncedSearch = debounce((value) => {
+        setData('search', value);
+        applyFilters();
+    }, 500);
 
-    const handleCategoryFilter = (value) => {
-        setCategoryFilter(value);
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setData('search', value);
+        debouncedSearch(value);
+    };
+
+    const applyFilters = useCallback(() => {
         router.get(
             route('admin.courses.index'),
             {
-                search: searchTerm,
-                category: value,
-                status: statusFilter,
+                search: data.search,
+                category: data.category,
+                status: data.status,
+                sort: data.sort,
             },
-            { preserveState: true },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
+        );
+    }, [data.search, data.category, data.status, data.sort]);
+
+    const handleFilterChange = (field, value) => {
+        setData((prevData) => ({
+            ...prevData,
+            [field]: value,
+        }));
+
+        router.get(
+            route('admin.courses.index'),
+            {
+                ...data,
+                [field]: value,
+            },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
         );
     };
 
-    const handleStatusFilter = (value) => {
-        setStatusFilter(value);
-        router.get(
-            route('admin.courses.index'),
-            {
-                search: searchTerm,
-                category: categoryFilter,
-                status: value,
-            },
-            { preserveState: true },
-        );
+    const resetFilters = () => {
+        router.get(route('admin.courses.index'), {}, { preserveState: false });
     };
-
-    useEffect(() => {
-        setSearchTerm(filters.search || '');
-        setCategoryFilter(filters.category || 'all');
-        setStatusFilter(filters.status || 'all');
-    }, [filters]);
 
     const getStatusBadge = (course) => {
         if (!course.is_approved) {
@@ -160,16 +170,16 @@ export default function Index({ courses, categories, filters }) {
                                     type="search"
                                     placeholder="Search courses..."
                                     className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        handleSearch(e.target.value);
-                                    }}
+                                    value={data.search}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
+
                             <Select
-                                value={categoryFilter}
-                                onValueChange={handleCategoryFilter}
+                                value={data.category}
+                                onValueChange={(value) =>
+                                    handleFilterChange('category', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by category" />
@@ -189,8 +199,10 @@ export default function Index({ courses, categories, filters }) {
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={statusFilter}
-                                onValueChange={handleStatusFilter}
+                                value={data.status}
+                                onValueChange={(value) =>
+                                    handleFilterChange('status', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by status" />
@@ -216,6 +228,53 @@ export default function Index({ courses, categories, filters }) {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <Select
+                                value={data.sort}
+                                onValueChange={(value) =>
+                                    handleFilterChange('sort', value)
+                                }
+                            >
+                                <SelectTrigger className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="created_at_desc">
+                                        Newest First
+                                    </SelectItem>
+                                    <SelectItem value="created_at_asc">
+                                        Oldest First
+                                    </SelectItem>
+                                    <SelectItem value="title_asc">
+                                        Title (A-Z)
+                                    </SelectItem>
+                                    <SelectItem value="title_desc">
+                                        Title (Z-A)
+                                    </SelectItem>
+                                    <SelectItem value="price_desc">
+                                        Price (High-Low)
+                                    </SelectItem>
+                                    <SelectItem value="price_asc">
+                                        Price (Low-High)
+                                    </SelectItem>
+                                    <SelectItem value="enrollments_desc">
+                                        Most Enrolled
+                                    </SelectItem>
+                                    <SelectItem value="enrollments_asc">
+                                        Least Enrolled
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {(data.search ||
+                                data.category !== 'all' ||
+                                data.status !== 'all') && (
+                                <Button
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    className="whitespace-nowrap"
+                                >
+                                    Clear Filters
+                                </Button>
+                            )}
                         </div>
 
                         {courses.data.length === 0 ? (
@@ -225,191 +284,200 @@ export default function Index({ courses, categories, filters }) {
                                     No courses found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {searchTerm ||
-                                    categoryFilter !== 'all' ||
-                                    statusFilter !== 'all'
+                                    {data.search ||
+                                    data.category !== 'all' ||
+                                    data.status !== 'all'
                                         ? "Try adjusting your search or filters to find what you're looking for."
                                         : 'There are no courses in the system yet.'}
                                 </p>
                             </div>
                         ) : (
                             <>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Course</TableHead>
-                                            <TableHead>Instructor</TableHead>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead className="text-center">
-                                                Status
-                                            </TableHead>
-                                            <TableHead className="text-center">
-                                                Price
-                                            </TableHead>
-                                            <TableHead className="text-center">
-                                                Rating
-                                            </TableHead>
-                                            <TableHead className="text-center">
-                                                Lessons
-                                            </TableHead>
-                                            <TableHead className="text-center">
-                                                Students
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                Actions
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {courses.data.map((course) => (
-                                            <TableRow key={course.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="h-10 w-10 overflow-hidden rounded-md bg-muted">
-                                                            {course.thumbnail ? (
-                                                                <img
-                                                                    src={`/storage/${course.thumbnail}`}
-                                                                    alt={
+                                <div className="rounded-lg border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Course</TableHead>
+                                                <TableHead>
+                                                    Instructor
+                                                </TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead className="text-center">
+                                                    Status
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    Price
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    Rating
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    Lessons
+                                                </TableHead>
+                                                <TableHead className="text-center">
+                                                    Students
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Actions
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {courses.data.map((course) => (
+                                                <TableRow key={course.id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="h-10 w-10 overflow-hidden rounded-md bg-muted">
+                                                                {course.thumbnail ? (
+                                                                    <img
+                                                                        src={`/storage/${course.thumbnail}`}
+                                                                        alt={
+                                                                            course.title
+                                                                        }
+                                                                        className="h-full w-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex h-full w-full items-center justify-center bg-primary/10">
+                                                                        <BookOpen className="h-5 w-5 text-primary" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium">
+                                                                    {
                                                                         course.title
                                                                     }
-                                                                    className="h-full w-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="flex h-full w-full items-center justify-center bg-primary/10">
-                                                                    <BookOpen className="h-5 w-5 text-primary" />
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium">
-                                                                {course.title}
+                                                                {course.level && (
+                                                                    <div className="text-sm text-muted-foreground">
+                                                                        {course.level
+                                                                            .charAt(
+                                                                                0,
+                                                                            )
+                                                                            .toUpperCase() +
+                                                                            course.level.slice(
+                                                                                1,
+                                                                            )}
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            {course.level && (
-                                                                <div className="text-sm text-muted-foreground">
-                                                                    {course.level
-                                                                        .charAt(
-                                                                            0,
-                                                                        )
-                                                                        .toUpperCase() +
-                                                                        course.level.slice(
-                                                                            1,
-                                                                        )}
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {course.user?.name || 'N/A'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {course.category?.name ||
-                                                        'Uncategorized'}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {getStatusBadge(course)}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {formatCurrency(
-                                                        course.price,
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <div className="flex items-center justify-center">
-                                                        <Star className="mr-1 h-4 w-4 text-yellow-500" />
-                                                        <span>
-                                                            {Number(
-                                                                course.average_rating,
-                                                            ).toFixed(1)}
-                                                        </span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {course.lessons_count || 0}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {course.enrollments_count ||
-                                                        0}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end space-x-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.courses.show',
-                                                                    course.id,
-                                                                )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {course.user?.name ||
+                                                            'N/A'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {course.category
+                                                            ?.name ||
+                                                            'Uncategorized'}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {getStatusBadge(course)}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {formatCurrency(
+                                                            course.price,
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <div className="flex items-center justify-center">
+                                                            <Star className="mr-1 h-4 w-4 text-yellow-500" />
+                                                            <span>
+                                                                {Number(
+                                                                    course.average_rating,
+                                                                ).toFixed(1)}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {course.lessons_count ||
+                                                            0}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {course.enrollments_count ||
+                                                            0}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex justify-end space-x-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                asChild
                                                             >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.courses.edit',
-                                                                    course.id,
-                                                                )}
+                                                                <Link
+                                                                    href={route(
+                                                                        'admin.courses.show',
+                                                                        course.id,
+                                                                    )}
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                asChild
                                                             >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant={
-                                                                course.is_approved
-                                                                    ? 'outline'
-                                                                    : 'success'
-                                                            }
-                                                            size="icon"
-                                                            asChild
-                                                            title={
-                                                                course.is_approved
-                                                                    ? 'Unapprove'
-                                                                    : 'Approve'
-                                                            }
-                                                        >
-                                                            <Link
-                                                                href={route(
-                                                                    'admin.courses.approve',
-                                                                    course.id,
-                                                                )}
-                                                                method="patch"
+                                                                <Link
+                                                                    href={route(
+                                                                        'admin.courses.edit',
+                                                                        course.id,
+                                                                    )}
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Link>
+                                                            </Button>
+                                                            <Button
+                                                                variant={
+                                                                    course.is_approved
+                                                                        ? 'outline'
+                                                                        : 'success'
+                                                                }
+                                                                size="icon"
+                                                                asChild
+                                                                title={
+                                                                    course.is_approved
+                                                                        ? 'Unapprove'
+                                                                        : 'Approve'
+                                                                }
                                                             >
-                                                                {course.is_approved ? (
-                                                                    <XCircle className="h-4 w-4" />
-                                                                ) : (
-                                                                    <CheckCircle className="h-4 w-4" />
-                                                                )}
-                                                            </Link>
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon"
-                                                            onClick={() =>
-                                                                confirmDelete(
-                                                                    course,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                course.enrollments_count >
-                                                                0
-                                                            }
-                                                        >
-                                                            <Trash className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                                                <Link
+                                                                    href={route(
+                                                                        'admin.courses.approve',
+                                                                        course.id,
+                                                                    )}
+                                                                    method="patch"
+                                                                >
+                                                                    {course.is_approved ? (
+                                                                        <XCircle className="h-4 w-4" />
+                                                                    ) : (
+                                                                        <CheckCircle className="h-4 w-4" />
+                                                                    )}
+                                                                </Link>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    confirmDelete(
+                                                                        course,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    course.enrollments_count >
+                                                                    0
+                                                                }
+                                                            >
+                                                                <Trash className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
 
                                 {/* Pagination */}
                                 <div className="mt-4">

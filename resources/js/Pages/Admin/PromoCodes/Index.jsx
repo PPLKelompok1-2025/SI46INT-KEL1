@@ -41,7 +41,8 @@ import {
 } from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { debounce } from 'lodash';
 import {
     Calendar,
     CheckCircle,
@@ -53,28 +54,60 @@ import {
     Trash,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function Index({ promoCodes, filters, stats }) {
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        status: filters.status || 'all',
+        sort: filters.sort || 'created_at_desc',
+    });
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [promoCodeToDelete, setPromoCodeToDelete] = useState(null);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        applyFilters({ search: searchTerm });
+    const debouncedSearch = debounce((value) => {
+        setData('search', value);
+        applyFilters();
+    }, 500);
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setData('search', value);
+        debouncedSearch(value);
     };
 
-    const applyFilters = (newFilters) => {
+    const applyFilters = useCallback(() => {
         router.get(
             route('admin.promo-codes.index'),
             {
-                ...filters,
-                ...newFilters,
+                search: data.search,
+                status: data.status,
+                sort: data.sort,
             },
             {
-                preserveState: true,
+                preserveState: false,
                 preserveScroll: true,
+                only: [],
+            },
+        );
+    }, [data.search, data.status, data.sort]);
+
+    const handleFilterChange = (field, value) => {
+        setData((prevData) => ({
+            ...prevData,
+            [field]: value,
+        }));
+
+        router.get(
+            route('admin.promo-codes.index'),
+            {
+                ...data,
+                [field]: value,
+            },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
             },
         );
     };
@@ -83,16 +116,8 @@ export default function Index({ promoCodes, filters, stats }) {
         router.get(
             route('admin.promo-codes.index'),
             {},
-            { preserveState: true },
+            { preserveState: false },
         );
-    };
-
-    const handleStatusChange = (status) => {
-        applyFilters({ status: status === filters.status ? null : status });
-    };
-
-    const handleSortChange = (sort) => {
-        applyFilters({ sort });
     };
 
     const toggleActive = (promoCode) => {
@@ -209,17 +234,14 @@ export default function Index({ promoCodes, filters, stats }) {
                                     type="search"
                                     placeholder="Search promo codes..."
                                     className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        handleSearch(e);
-                                    }}
+                                    value={data.search}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
                             <Select
-                                value={filters.status || 'all'}
+                                value={data.status}
                                 onValueChange={(value) =>
-                                    handleStatusChange(value)
+                                    handleFilterChange('status', value)
                                 }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
@@ -238,8 +260,10 @@ export default function Index({ promoCodes, filters, stats }) {
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={filters.sort || 'created_at_desc'}
-                                onValueChange={handleSortChange}
+                                value={data.sort}
+                                onValueChange={(value) =>
+                                    handleFilterChange('sort', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Sort by" />
@@ -265,7 +289,7 @@ export default function Index({ promoCodes, filters, stats }) {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            {(filters.search || filters.status !== 'all') && (
+                            {(data.search || data.status !== 'all') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
@@ -283,7 +307,7 @@ export default function Index({ promoCodes, filters, stats }) {
                                     No promo codes found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {filters.search || filters.status !== 'all'
+                                    {data.search || data.status !== 'all'
                                         ? "Try adjusting your search or filter to find what you're looking for."
                                         : 'There are no promo codes in the system yet.'}
                                 </p>

@@ -32,15 +32,56 @@ class UserController extends Controller
             $query->where('role', $request->get('role'));
         }
 
-        $sortField = $request->get('sort_field', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
+        if ($request->has('sort') && $request->sort) {
+            $sortField = 'created_at';
+            $sortDirection = 'desc';
+
+            if ($request->sort === 'created_at_asc') {
+                $sortField = 'created_at';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'created_at_desc') {
+                $sortField = 'created_at';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'name_asc') {
+                $sortField = 'name';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'name_desc') {
+                $sortField = 'name';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'email_asc') {
+                $sortField = 'email';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'email_desc') {
+                $sortField = 'email';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'courses_desc') {
+                $sortField = 'courses_count';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'courses_asc') {
+                $sortField = 'courses_count';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'enrollments_desc') {
+                $sortField = 'enrollments_count';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'enrollments_asc') {
+                $sortField = 'enrollments_count';
+                $sortDirection = 'asc';
+            }
+
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
         $users = $query->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search', 'role', 'sort_field', 'sort_direction']),
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'role' => $request->input('role', 'all'),
+                'sort' => $request->input('sort', 'created_at_desc'),
+            ],
         ]);
     }
 

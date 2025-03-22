@@ -22,22 +22,29 @@ class TransactionController extends Controller
         $query = Transaction::query()
             ->with(['user', 'course']);
 
-        $sortField = 'created_at';
-        $sortDirection = 'desc';
-
-        if ($request->filled('sort_field') && $request->filled('sort_direction')) {
-            $allowedSortFields = ['transaction_id', 'created_at', 'amount', 'status'];
-            if (in_array($request->sort_field, $allowedSortFields)) {
-                $sortField = $request->sort_field;
-                $sortDirection = $request->sort_direction;
-            }
-        }
-
-        if ($sortField === 'created') {
+        // Handle sorting with the single 'sort' parameter
+        if ($request->has('sort') && $request->sort) {
             $sortField = 'created_at';
-        }
+            $sortDirection = 'desc';
 
-        $query->orderBy($sortField, $sortDirection);
+            if ($request->sort === 'created_at_asc') {
+                $sortField = 'created_at';
+                $sortDirection = 'asc';
+            } elseif ($request->sort === 'created_at_desc') {
+                $sortField = 'created_at';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'amount_desc') {
+                $sortField = 'amount';
+                $sortDirection = 'desc';
+            } elseif ($request->sort === 'amount_asc') {
+                $sortField = 'amount';
+                $sortDirection = 'asc';
+            }
+
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -115,8 +122,7 @@ class TransactionController extends Controller
                 'status' => $request->input('status', 'all'),
                 'type' => $request->input('type', 'all'),
                 'date_range' => $request->input('date_range', 'all'),
-                'sort_field' => $request->input('sort_field', 'created_at'),
-                'sort_direction' => $request->input('sort_direction', 'desc'),
+                'sort' => $request->input('sort', 'created_at_desc'),
             ],
             'summary' => $summary,
             'statuses' => $this->getAvailableStatuses(),
@@ -254,9 +260,30 @@ class TransactionController extends Controller
                 }
             });
 
-        $sortField = $request->get('sort_field', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $query->orderBy($sortField, $sortDirection);
+        // Handle sorting with the single 'sort' parameter
+        if ($request->has('sort')) {
+            $sortField = 'created_at';
+            $sortDirection = 'desc';
+
+            $sort = $request->get('sort');
+            if ($sort === 'created_at_asc') {
+                $sortField = 'created_at';
+                $sortDirection = 'asc';
+            } elseif ($sort === 'created_at_desc') {
+                $sortField = 'created_at';
+                $sortDirection = 'desc';
+            } elseif ($sort === 'amount_desc') {
+                $sortField = 'amount';
+                $sortDirection = 'desc';
+            } elseif ($sort === 'amount_asc') {
+                $sortField = 'amount';
+                $sortDirection = 'asc';
+            }
+
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
 
         $transactions = $query->get();
 

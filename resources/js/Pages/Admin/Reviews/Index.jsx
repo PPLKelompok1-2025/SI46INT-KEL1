@@ -48,7 +48,7 @@ import {
     TooltipTrigger,
 } from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { debounce } from 'lodash';
 import {
@@ -60,7 +60,7 @@ import {
     Star,
     Trash,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function Index({
     auth,
@@ -70,55 +70,78 @@ export default function Index({
     instructors,
     stats,
 }) {
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [courseFilter, setCourseFilter] = useState(
-        filters.course_id || 'all',
-    );
-    const [instructorFilter, setInstructorFilter] = useState(
-        filters.instructor_id || 'all',
-    );
-    const [ratingFilter, setRatingFilter] = useState(filters.rating || 'all');
-    const [reportedFilter, setReportedFilter] = useState(
-        filters.reported || 'all',
-    );
-    const [sortFilter, setSortFilter] = useState(
-        filters.sort || 'created_at_desc',
-    );
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        course_id: filters.course_id || 'all',
+        instructor_id: filters.instructor_id || 'all',
+        rating: filters.rating || 'all',
+        reported: filters.reported || 'all',
+        sort: filters.sort || 'created_at_desc',
+    });
+
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
 
-    const handleSearch = debounce((value) => {
-        applyFilters({ search: value });
-    }, 300);
+    const debouncedSearch = debounce((value) => {
+        setData('search', value);
+        applyFilters();
+    }, 500);
 
-    const applyFilters = (newFilters) => {
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setData('search', value);
+        debouncedSearch(value);
+    };
+
+    const applyFilters = useCallback(() => {
         router.get(
             route('admin.reviews.index'),
             {
-                ...filters,
-                ...newFilters,
+                search: data.search,
+                course_id: data.course_id,
+                instructor_id: data.instructor_id,
+                rating: data.rating,
+                reported: data.reported,
+                sort: data.sort,
             },
-            { preserveState: true, preserveScroll: true },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
+        );
+    }, [
+        data.search,
+        data.course_id,
+        data.instructor_id,
+        data.rating,
+        data.reported,
+        data.sort,
+    ]);
+
+    const handleFilterChange = (field, value) => {
+        setData((prevData) => ({
+            ...prevData,
+            [field]: value,
+        }));
+
+        router.get(
+            route('admin.reviews.index'),
+            {
+                ...data,
+                [field]: value,
+            },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
         );
     };
 
     const resetFilters = () => {
-        router.get(route('admin.reviews.index'), {}, { preserveState: true });
+        router.get(route('admin.reviews.index'), {}, { preserveState: false });
     };
-
-    const handleSortChange = (value) => {
-        setSortFilter(value);
-        applyFilters({ sort: value });
-    };
-
-    useEffect(() => {
-        setSearchTerm(filters.search || '');
-        setCourseFilter(filters.course_id || 'all');
-        setInstructorFilter(filters.instructor_id || 'all');
-        setRatingFilter(filters.rating || 'all');
-        setReportedFilter(filters.reported || 'all');
-        setSortFilter(filters.sort || 'created_at_desc');
-    }, [filters]);
 
     const confirmDelete = (review) => {
         setReviewToDelete(review);
@@ -206,19 +229,15 @@ export default function Index({
                                     type="search"
                                     placeholder="Search reviews..."
                                     className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        handleSearch(e.target.value);
-                                    }}
+                                    value={data.search}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
                             <Select
-                                value={courseFilter}
-                                onValueChange={(value) => {
-                                    setCourseFilter(value);
-                                    applyFilters({ course_id: value });
-                                }}
+                                value={data.course_id}
+                                onValueChange={(value) =>
+                                    handleFilterChange('course_id', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by course" />
@@ -238,11 +257,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={instructorFilter}
-                                onValueChange={(value) => {
-                                    setInstructorFilter(value);
-                                    applyFilters({ instructor_id: value });
-                                }}
+                                value={data.instructor_id}
+                                onValueChange={(value) =>
+                                    handleFilterChange('instructor_id', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by instructor" />
@@ -262,11 +280,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={ratingFilter}
-                                onValueChange={(value) => {
-                                    setRatingFilter(value);
-                                    applyFilters({ rating: value });
-                                }}
+                                value={data.rating}
+                                onValueChange={(value) =>
+                                    handleFilterChange('rating', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by rating" />
@@ -286,11 +303,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={reportedFilter}
-                                onValueChange={(value) => {
-                                    setReportedFilter(value);
-                                    applyFilters({ reported: value });
-                                }}
+                                value={data.reported}
+                                onValueChange={(value) =>
+                                    handleFilterChange('reported', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by status" />
@@ -305,8 +321,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={sortFilter}
-                                onValueChange={handleSortChange}
+                                value={data.sort}
+                                onValueChange={(value) =>
+                                    handleFilterChange('sort', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Sort by" />
@@ -326,12 +344,12 @@ export default function Index({
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            {(searchTerm ||
-                                courseFilter ||
-                                instructorFilter ||
-                                ratingFilter ||
-                                reportedFilter ||
-                                sortFilter !== 'created_at_desc') && (
+                            {(data.search ||
+                                data.course_id !== 'all' ||
+                                data.instructor_id !== 'all' ||
+                                data.rating !== 'all' ||
+                                data.reported !== 'all' ||
+                                data.sort !== 'created_at_desc') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
@@ -349,11 +367,11 @@ export default function Index({
                                     No reviews found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {searchTerm ||
-                                    courseFilter ||
-                                    instructorFilter ||
-                                    ratingFilter ||
-                                    reportedFilter
+                                    {data.search ||
+                                    data.course_id !== 'all' ||
+                                    data.instructor_id !== 'all' ||
+                                    data.rating !== 'all' ||
+                                    data.reported !== 'all'
                                         ? "Try adjusting your filters to find what you're looking for."
                                         : 'There are no reviews in the system yet.'}
                                 </p>

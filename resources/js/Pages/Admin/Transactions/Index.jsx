@@ -40,9 +40,10 @@ import {
 } from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { debounce } from 'lodash';
 import { Download, Eye, RefreshCw, Search } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 export default function Index({
     transactions,
@@ -51,16 +52,13 @@ export default function Index({
     statuses,
     types,
 }) {
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [status, setStatus] = useState(filters.status || 'all');
-    const [type, setType] = useState(filters.type || 'all');
-    const [dateRange, setDateRange] = useState(filters.date_range || 'all');
-    const [sortField, setSortField] = useState(
-        filters.sort_field || 'created_at',
-    );
-    const [sortDirection, setSortDirection] = useState(
-        filters.sort_direction || 'desc',
-    );
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        status: filters.status || 'all',
+        type: filters.type || 'all',
+        date_range: filters.date_range || 'all',
+        sort: filters.sort || 'created_at_desc',
+    });
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -102,67 +100,60 @@ export default function Index({
         { value: 'last_year', label: 'Last Year' },
     ];
 
-    const applyFilters = useCallback(
-        () =>
-            router.get(
-                route('admin.transactions.index'),
-                {
-                    search: searchTerm,
-                    status,
-                    type,
-                    date_range: dateRange,
-                    sort_field: sortField,
-                    sort_direction: sortDirection,
-                },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            ),
-        [searchTerm, status, type, dateRange, sortField, sortDirection],
-    );
+    const debouncedSearch = debounce((value) => {
+        setData('search', value);
+        applyFilters();
+    }, 500);
 
-    const handleSort = (field) => {
-        if (field === 'created') {
-            field = 'created_at';
-        }
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setData('search', value);
+        debouncedSearch(value);
+    };
 
-        const direction =
-            field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortField(field);
-        setSortDirection(direction);
+    const applyFilters = useCallback(() => {
+        router.get(
+            route('admin.transactions.index'),
+            {
+                search: data.search,
+                status: data.status,
+                type: data.type,
+                date_range: data.date_range,
+                sort: data.sort,
+            },
+            {
+                preserveState: false,
+                replace: true,
+            },
+        );
+    }, [data.search, data.status, data.type, data.date_range, data.sort]);
+
+    const handleFilterChange = (field, value) => {
+        setData((prevData) => ({
+            ...prevData,
+            [field]: value,
+        }));
 
         router.get(
             route('admin.transactions.index'),
             {
-                search: searchTerm,
-                status,
-                type,
-                date_range: dateRange,
-                sort_field: field,
-                sort_direction: direction,
+                ...data,
+                [field]: value,
             },
             {
-                preserveState: true,
+                preserveState: false,
                 replace: true,
+                only: [],
             },
         );
     };
 
-    useEffect(() => {
-        if (status !== 'all' || type !== 'all' || dateRange !== 'all') {
-            applyFilters();
-        }
-    }, [status, type, dateRange, applyFilters]);
-
     const resetFilters = () => {
-        setSearchTerm('');
-        setStatus('all');
-        setType('all');
-        setDateRange('all');
-        setSortField('created_at');
-        setSortDirection('desc');
-        router.get(route('admin.transactions.index'));
+        router.get(
+            route('admin.transactions.index'),
+            {},
+            { preserveState: false },
+        );
     };
 
     return (
@@ -251,16 +242,19 @@ export default function Index({
                                     type="search"
                                     placeholder="Search transactions..."
                                     className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) =>
-                                        setSearchTerm(e.target.value)
-                                    }
+                                    value={data.search}
+                                    onChange={handleSearchChange}
                                     onKeyDown={(e) =>
                                         e.key === 'Enter' && applyFilters()
                                     }
                                 />
                             </div>
-                            <Select value={status} onValueChange={setStatus}>
+                            <Select
+                                value={data.status}
+                                onValueChange={(value) =>
+                                    handleFilterChange('status', value)
+                                }
+                            >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by status" />
                                 </SelectTrigger>
@@ -277,7 +271,12 @@ export default function Index({
                                     )}
                                 </SelectContent>
                             </Select>
-                            <Select value={type} onValueChange={setType}>
+                            <Select
+                                value={data.type}
+                                onValueChange={(value) =>
+                                    handleFilterChange('type', value)
+                                }
+                            >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by type" />
                                 </SelectTrigger>
@@ -295,8 +294,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={dateRange}
-                                onValueChange={setDateRange}
+                                value={data.date_range}
+                                onValueChange={(value) =>
+                                    handleFilterChange('date_range', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by date" />
@@ -313,23 +314,10 @@ export default function Index({
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={
-                                    sortField === 'created_at'
-                                        ? sortDirection === 'desc'
-                                            ? 'created_at_desc'
-                                            : 'created_at_asc'
-                                        : sortField === 'amount'
-                                          ? sortDirection === 'desc'
-                                              ? 'amount_desc'
-                                              : 'amount_asc'
-                                          : 'created_at_desc'
+                                value={data.sort}
+                                onValueChange={(value) =>
+                                    handleFilterChange('sort', value)
                                 }
-                                onValueChange={(value) => {
-                                    const [field, direction] = value.split('_');
-                                    setSortField(field);
-                                    setSortDirection(direction);
-                                    handleSort(field);
-                                }}
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Sort by" />
@@ -349,12 +337,12 @@ export default function Index({
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            {(searchTerm ||
-                                status !== 'all' ||
-                                type !== 'all' ||
-                                dateRange !== 'all' ||
-                                sortField !== 'created_at' ||
-                                sortDirection !== 'desc') && (
+                            {(data.search ||
+                                data.status !== 'all' ||
+                                data.type !== 'all' ||
+                                data.date_range !== 'all' ||
+                                data.sort_field !== 'created_at' ||
+                                data.sort_direction !== 'desc') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
@@ -373,10 +361,10 @@ export default function Index({
                                     (window.location.href = route(
                                         'admin.transactions.export',
                                         {
-                                            search: searchTerm,
-                                            status,
-                                            type,
-                                            date_range: dateRange,
+                                            search: data.search,
+                                            status: data.status,
+                                            type: data.type,
+                                            date_range: data.date_range,
                                         },
                                     ))
                                 }
@@ -396,9 +384,11 @@ export default function Index({
                                             }
                                         >
                                             Transaction ID
-                                            {sortField === 'transaction_id' && (
+                                            {data.sort_field ===
+                                                'transaction_id' && (
                                                 <span className="ml-1">
-                                                    {sortDirection === 'asc'
+                                                    {data.sort_direction ===
+                                                    'asc'
                                                         ? '↑'
                                                         : '↓'}
                                                 </span>
@@ -411,9 +401,11 @@ export default function Index({
                                             }
                                         >
                                             Date
-                                            {sortField === 'created_at' && (
+                                            {data.sort_field ===
+                                                'created_at' && (
                                                 <span className="ml-1">
-                                                    {sortDirection === 'asc'
+                                                    {data.sort_direction ===
+                                                    'asc'
                                                         ? '↑'
                                                         : '↓'}
                                                 </span>
@@ -426,9 +418,10 @@ export default function Index({
                                             onClick={() => handleSort('amount')}
                                         >
                                             Amount
-                                            {sortField === 'amount' && (
+                                            {data.sort_field === 'amount' && (
                                                 <span className="ml-1">
-                                                    {sortDirection === 'asc'
+                                                    {data.sort_direction ===
+                                                    'asc'
                                                         ? '↑'
                                                         : '↓'}
                                                 </span>
@@ -593,15 +586,15 @@ export default function Index({
                                                                 link.url,
                                                                 {
                                                                     data: {
-                                                                        search: searchTerm,
-                                                                        status,
-                                                                        type,
+                                                                        search: data.search,
+                                                                        status: data.status,
+                                                                        type: data.type,
                                                                         date_range:
-                                                                            dateRange,
+                                                                            data.date_range,
                                                                         sort_field:
-                                                                            sortField,
+                                                                            data.sort_field,
                                                                         sort_direction:
-                                                                            sortDirection,
+                                                                            data.sort_direction,
                                                                     },
                                                                     preserveState: true,
                                                                     preserveScroll: true,
@@ -629,15 +622,15 @@ export default function Index({
                                                                 link.url,
                                                                 {
                                                                     data: {
-                                                                        search: searchTerm,
-                                                                        status,
-                                                                        type,
+                                                                        search: data.search,
+                                                                        status: data.status,
+                                                                        type: data.type,
                                                                         date_range:
-                                                                            dateRange,
+                                                                            data.date_range,
                                                                         sort_field:
-                                                                            sortField,
+                                                                            data.sort_field,
                                                                         sort_direction:
-                                                                            sortDirection,
+                                                                            data.sort_direction,
                                                                     },
                                                                     preserveState: true,
                                                                     preserveScroll: true,
@@ -662,15 +655,15 @@ export default function Index({
                                                         link.url &&
                                                         router.visit(link.url, {
                                                             data: {
-                                                                search: searchTerm,
-                                                                status,
-                                                                type,
+                                                                search: data.search,
+                                                                status: data.status,
+                                                                type: data.type,
                                                                 date_range:
-                                                                    dateRange,
+                                                                    data.date_range,
                                                                 sort_field:
-                                                                    sortField,
+                                                                    data.sort_field,
                                                                 sort_direction:
-                                                                    sortDirection,
+                                                                    data.sort_direction,
                                                             },
                                                             preserveState: true,
                                                             preserveScroll: true,

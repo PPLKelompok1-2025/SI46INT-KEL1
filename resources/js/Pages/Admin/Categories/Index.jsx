@@ -47,7 +47,7 @@ import {
     TooltipTrigger,
 } from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { debounce } from 'lodash';
 import {
     BookOpen,
@@ -59,14 +59,17 @@ import {
     Search,
     Trash,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function Index({ categories, filters, stats }) {
+    const { data, setData } = useForm({
+        search: filters.search || '',
+        parent: filters.parent || 'all',
+        sort: filters.sort || 'name_asc',
+    });
+
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState(null);
-    const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [parentFilter, setParentFilter] = useState(filters.parent || 'all');
-    const [sortFilter, setSortFilter] = useState(filters.sort || 'name_asc');
 
     const confirmDelete = (category) => {
         setCategoryToDelete(category);
@@ -82,18 +85,50 @@ export default function Index({ categories, filters, stats }) {
         });
     };
 
-    const handleSearch = debounce((value) => {
-        applyFilters({ search: value });
-    }, 300);
+    const debouncedSearch = debounce((value) => {
+        setData('search', value);
+        applyFilters();
+    }, 500);
 
-    const applyFilters = (newFilters) => {
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setData('search', value);
+        debouncedSearch(value);
+    };
+
+    const applyFilters = useCallback(() => {
         router.get(
             route('admin.categories.index'),
             {
-                ...filters,
-                ...newFilters,
+                search: data.search,
+                parent: data.parent,
+                sort: data.sort,
             },
-            { preserveState: true, preserveScroll: true },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
+        );
+    }, [data.search, data.parent, data.sort]);
+
+    const handleFilterChange = (field, value) => {
+        setData((prevData) => ({
+            ...prevData,
+            [field]: value,
+        }));
+
+        router.get(
+            route('admin.categories.index'),
+            {
+                ...data,
+                [field]: value,
+            },
+            {
+                preserveState: false,
+                preserveScroll: true,
+                only: [],
+            },
         );
     };
 
@@ -101,25 +136,9 @@ export default function Index({ categories, filters, stats }) {
         router.get(
             route('admin.categories.index'),
             {},
-            { preserveState: true },
+            { preserveState: false },
         );
     };
-
-    const handleParentChange = (value) => {
-        setParentFilter(value);
-        applyFilters({ parent: value });
-    };
-
-    const handleSortChange = (value) => {
-        setSortFilter(value);
-        applyFilters({ sort: value });
-    };
-
-    useEffect(() => {
-        setSearchTerm(filters.search || '');
-        setParentFilter(filters.parent || 'all');
-        setSortFilter(filters.sort || 'name_asc');
-    }, [filters]);
 
     return (
         <AuthenticatedLayout>
@@ -192,16 +211,15 @@ export default function Index({ categories, filters, stats }) {
                                     type="search"
                                     placeholder="Search categories..."
                                     className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        handleSearch(e.target.value);
-                                    }}
+                                    value={data.search}
+                                    onChange={handleSearchChange}
                                 />
                             </div>
                             <Select
-                                value={parentFilter}
-                                onValueChange={handleParentChange}
+                                value={data.parent}
+                                onValueChange={(value) =>
+                                    handleFilterChange('parent', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Filter by type" />
@@ -219,8 +237,10 @@ export default function Index({ categories, filters, stats }) {
                                 </SelectContent>
                             </Select>
                             <Select
-                                value={sortFilter}
-                                onValueChange={handleSortChange}
+                                value={data.sort}
+                                onValueChange={(value) =>
+                                    handleFilterChange('sort', value)
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Sort by" />
@@ -246,7 +266,7 @@ export default function Index({ categories, filters, stats }) {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            {(filters.search || filters.parent !== 'all') && (
+                            {(data.search || data.parent !== 'all') && (
                                 <Button
                                     variant="outline"
                                     onClick={resetFilters}
@@ -264,7 +284,7 @@ export default function Index({ categories, filters, stats }) {
                                     No categories found
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    {filters.search || filters.parent !== 'all'
+                                    {data.search || data.parent !== 'all'
                                         ? "Try adjusting your search or filter to find what you're looking for."
                                         : 'There are no categories in the system yet.'}
                                 </p>
