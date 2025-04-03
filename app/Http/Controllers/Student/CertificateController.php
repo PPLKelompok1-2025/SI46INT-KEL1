@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -13,19 +14,28 @@ class CertificateController extends Controller
     /**
      * Display a listing of the student's certificates.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
+        $page = $request->input('page', 1);
+        $perPage = 9;
 
-        $certificates = Certificate::where('user_id', $user->id)
+        $query = Certificate::where('user_id', $user->id)
             ->with('course')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
+
+        $paginatedCertificates = $query->paginate($perPage);
+        
+        $pagination = $paginatedCertificates->toArray();
+        $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
 
         return Inertia::render('Student/Certificates/Index', [
-            'certificates' => $certificates
+            'certificates' => Inertia::merge($paginatedCertificates->items()),
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists
         ]);
     }
 

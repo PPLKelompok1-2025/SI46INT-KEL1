@@ -1,13 +1,24 @@
 import { Card, CardContent } from '@/Components/ui/card';
 import { Award, BookOpen, Clock } from 'lucide-react';
 
-export default function StatsOverview({ enrolledCourses, certificates }) {
-    const totalHoursLearned = enrolledCourses
-        .reduce(
-            (total, course) => total + (course.progress?.hours_spent || 0),
-            0,
-        )
-        .toFixed(1);
+export default function StatsOverview({
+    enrolledCount,
+    certificatesCount,
+    enrolledCourses = [],
+}) {
+    const totalEnrolled = enrolledCourses?.length || enrolledCount || 0;
+    const totalCertificates = certificatesCount || 0;
+
+    const totalHoursLearned =
+        enrolledCourses && enrolledCourses.length > 0
+            ? enrolledCourses
+                  .reduce(
+                      (total, course) =>
+                          total + (course.progress?.hours_spent || 0),
+                      0,
+                  )
+                  .toFixed(1)
+            : '0.0';
 
     return (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -17,9 +28,7 @@ export default function StatsOverview({ enrolledCourses, certificates }) {
                         <p className="text-sm text-muted-foreground">
                             Enrolled Courses
                         </p>
-                        <h3 className="text-2xl font-bold">
-                            {enrolledCourses.length}
-                        </h3>
+                        <h3 className="text-2xl font-bold">{totalEnrolled}</h3>
                     </div>
                     <BookOpen className="h-8 w-8 text-primary" />
                 </CardContent>
@@ -46,7 +55,7 @@ export default function StatsOverview({ enrolledCourses, certificates }) {
                             Certificates Earned
                         </p>
                         <h3 className="text-2xl font-bold">
-                            {certificates.length}
+                            {totalCertificates}
                         </h3>
                     </div>
                     <Award className="h-8 w-8 text-primary" />

@@ -55,10 +55,10 @@ export default function CourseLessons({ course }) {
                                     <Button variant="outline" size="sm" asChild>
                                         <Link
                                             href={route(
-                                                'instructor.lessons.edit',
+                                                'instructor.courses.lessons.edit',
                                                 {
-                                                    course: course.id,
-                                                    lesson: lesson.id,
+                                                    course,
+                                                    lesson,
                                                 },
                                             )}
                                         >

@@ -81,13 +81,13 @@ export default function Index({
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
                                 Total Revenue
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
+                            <div className="text-2xl font-bold">
                                 {formatCurrency(stats.totalRevenue)}
                             </div>
                             <div className="flex gap-2 text-xs text-green-600">
@@ -98,13 +98,13 @@ export default function Index({
                     </Card>
 
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
                                 Total Enrollments
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
+                            <div className="text-2xl font-bold">
                                 {stats.totalEnrollments}
                             </div>
                             <div className="flex gap-2 text-xs text-green-600">
@@ -113,20 +113,19 @@ export default function Index({
                             </div>
                         </CardContent>
                     </Card>
-
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
                                 New Users
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
+                            <div className="text-2xl font-bold">
                                 {stats.totalNewUsers}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                                <Users className="mr-1 inline h-4 w-4" /> Active
-                                students
+                            <div className="flex gap-2 text-xs text-green-600">
+                                <TrendingUp className="h-4 w-4" />{' '}
+                                {enrollmentTrend}% this month
                             </div>
                         </CardContent>
                     </Card>

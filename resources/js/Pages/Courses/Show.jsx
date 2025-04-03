@@ -4,39 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { BookOpen, CheckCircle, Clock, Star, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 export default function Show({
     course,
     reviews,
     similarCourses,
-    auth,
-    activeTab: initialActiveTab,
+    activeTab = 'overview',
 }) {
-    const [activeTab, setActiveTab] = useState(initialActiveTab || 'overview');
+    const { auth } = usePage().props;
 
     const handleTabChange = (value) => {
-        setActiveTab(value);
-
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('tab', value);
-        window.history.pushState({}, '', currentUrl.toString());
+        router.get(
+            route('courses.show', course.slug),
+            { tab: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['activeTab'],
+                replace: true,
+            },
+        );
     };
-
-    useEffect(() => {
-        const handlePopState = () => {
-            const params = new URLSearchParams(window.location.search);
-            const tabParam = params.get('tab');
-            if (tabParam) {
-                setActiveTab(tabParam);
-            }
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
 
     const renderStarRating = (rating) => {
         const roundedRating = Math.round(Number(rating));
@@ -56,6 +46,10 @@ export default function Show({
                 <span className="ml-1 text-sm">({roundedRating})</span>
             </div>
         );
+    };
+
+    const handleEnrollment = () => {
+        router.visit(route('payment.checkout', course.id));
     };
 
     return (
@@ -95,7 +89,7 @@ export default function Show({
                         </div>
                         <div className="flex items-center">
                             <Users className="mr-2 h-4 w-4" />
-                            <span>{course.enrollments_count} Enrolled</span>
+                            <span>{course.enrollments_count} Students</span>
                         </div>
                         <div className="flex items-center">
                             {renderStarRating(course.average_rating)}
@@ -369,16 +363,41 @@ export default function Show({
                                 <div className="mb-2 text-3xl font-bold">
                                     {course.price === 0
                                         ? 'Free'
-                                        : `${formatCurrency(course.price)}`}
+                                        : formatCurrency(course.price)}
                                 </div>
                             </div>
 
-                            {auth.user ? (
-                                <Button className="w-full">Enroll Now</Button>
+                            {auth?.user ? (
+                                auth.user.id !== course.user.id ? (
+                                    <Button
+                                        className="w-full"
+                                        onClick={handleEnrollment}
+                                    >
+                                        Enroll Now
+                                    </Button>
+                                ) : (
+                                    <Button className="w-full" asChild>
+                                        <Link
+                                            href={route(
+                                                'instructor.courses.show',
+                                                course.id,
+                                            )}
+                                        >
+                                            View Course
+                                        </Link>
+                                    </Button>
+                                )
                             ) : (
                                 <>
                                     <Button asChild className="mb-2 w-full">
-                                        <Link href={route('login')}>
+                                        <Link
+                                            href={route('login', {
+                                                redirect_to: route(
+                                                    'courses.show',
+                                                    course.slug,
+                                                ),
+                                            })}
+                                        >
                                             Log in to Enroll
                                         </Link>
                                     </Button>
@@ -471,7 +490,9 @@ export default function Show({
                                                     <div className="text-sm font-medium">
                                                         {course.price === 0
                                                             ? 'Free'
-                                                            : `${formatCurrency(course.price)}`}
+                                                            : formatCurrency(
+                                                                  course.price,
+                                                              )}
                                                     </div>
                                                     {renderStarRating(
                                                         course.average_rating ||

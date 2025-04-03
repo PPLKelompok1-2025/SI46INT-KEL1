@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Create({ course, nextOrder }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -23,6 +23,7 @@ export default function Create({ course, nextOrder }) {
         description: '',
         content: '',
         video_url: '',
+        temp_video: '', // For temporary uploaded video path
         duration: '',
         order: nextOrder,
         is_free: false,
@@ -32,9 +33,37 @@ export default function Create({ course, nextOrder }) {
 
     const [activeTab, setActiveTab] = useState('basic');
 
+    useEffect(() => {
+        return () => {
+            if (data.temp_video) {
+                deleteTempVideo(data.temp_video);
+            }
+        };
+    }, []);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route('instructor.courses.lessons.store', course.id));
+    };
+
+    const deleteTempVideo = (path) => {
+        if (!path) return;
+
+        fetch(route('instructor.lessons.videos.delete'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector(
+                    'meta[name="csrf-token"]',
+                ).content,
+            },
+            body: JSON.stringify({ path }),
+        }).then((response) => {
+            if (response.ok) {
+                setData('temp_video', '');
+                setUploadProgress(0);
+            }
+        });
     };
 
     return (

@@ -7,7 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     BookOpen,
@@ -18,7 +18,20 @@ import {
     Users,
 } from 'lucide-react';
 
-export default function Show({ course, stats }) {
+export default function Show({ course, stats, activeTab = 'overview' }) {
+    const handleTabChange = (value) => {
+        router.get(
+            route('instructor.courses.show', course.id),
+            { tab: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['activeTab'],
+                replace: true,
+            },
+        );
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title={`${course.title} - Course Management`} />
@@ -62,7 +75,11 @@ export default function Show({ course, stats }) {
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div className="md:col-span-2">
-                        <Tabs defaultValue="overview" className="space-y-4">
+                        <Tabs
+                            value={activeTab}
+                            onValueChange={handleTabChange}
+                            className="space-y-4"
+                        >
                             <TabsList>
                                 <TabsTrigger value="overview">
                                     <LayoutDashboard className="mr-2 h-4 w-4" />

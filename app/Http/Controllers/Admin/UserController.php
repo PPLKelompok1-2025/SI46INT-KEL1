@@ -75,6 +75,16 @@ class UserController extends Controller
 
         $users = $query->paginate(10)->withQueryString();
 
+        $stats = [
+            'totalUsers' => User::count(),
+            'totalAdmins' => User::where('role', 'admin')->count(),
+            'totalInstructors' => User::where('role', 'instructor')->count(),
+            'totalStudents' => User::where('role', 'student')->count(),
+            'totalCourses' => \App\Models\Course::count(),
+            'totalEnrollments' => \App\Models\Enrollment::count(),
+            'totalReviews' => \App\Models\Review::count(),
+        ];
+
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
             'filters' => [
@@ -82,6 +92,7 @@ class UserController extends Controller
                 'role' => $request->input('role', 'all'),
                 'sort' => $request->input('sort', 'created_at_desc'),
             ],
+            'stats' => $stats,
         ]);
     }
 

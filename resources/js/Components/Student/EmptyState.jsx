@@ -34,7 +34,9 @@ export default function EmptyState({
                 <h3 className="mb-2 text-lg font-medium">{title}</h3>
                 <p className="mb-4 text-muted-foreground">{description}</p>
                 <Button asChild>
-                    <Link href={buttonLink}>{buttonText}</Link>
+                    <Link href={buttonLink} prefetch="hover">
+                        {buttonText}
+                    </Link>
                 </Button>
             </CardContent>
         </Card>

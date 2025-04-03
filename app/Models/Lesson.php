@@ -15,6 +15,9 @@ class Lesson extends Model
         'slug',
         'description',
         'video_url',
+        'video_path',
+        'video_disk',
+        'encryption_key',
         'content',
         'duration',
         'order',
@@ -36,5 +39,15 @@ class Lesson extends Model
     public function assignments()
     {
         return $this->hasMany(Assignment::class);
+    }
+
+    public function getVideoPathAttribute($value)
+    {
+        return $value;
+    }
+
+    public function hasEncryptedVideo()
+    {
+        return !empty($this->video_path) && !empty($this->encryption_key);
     }
 }

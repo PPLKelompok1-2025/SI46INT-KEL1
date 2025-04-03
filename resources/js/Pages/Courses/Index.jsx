@@ -10,9 +10,23 @@ import {
 import { Input } from '@/Components/ui/input';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, router, useForm, WhenVisible } from '@inertiajs/react';
+import {
+    Head,
+    Link,
+    router,
+    useForm,
+    usePage,
+    WhenVisible,
+} from '@inertiajs/react';
 import { debounce } from 'lodash';
-import { BookOpen, ChevronDown, Filter, Search, Star } from 'lucide-react';
+import {
+    BookOpen,
+    ChevronDown,
+    Filter,
+    Heart,
+    Search,
+    Star,
+} from 'lucide-react';
 import { useState } from 'react';
 
 export default function Index({
@@ -23,6 +37,7 @@ export default function Index({
     page,
     isNextPageExists,
 }) {
+    const { auth } = usePage().props;
     const [showFilters, setShowFilters] = useState(false);
 
     const { data, setData } = useForm({
@@ -277,17 +292,38 @@ export default function Index({
                                             ? 'Free'
                                             : `${formatCurrency(course.price)}`}
                                     </div>
-                                    <Button asChild>
-                                        <Link
-                                            href={route(
-                                                'courses.show',
-                                                course.slug,
-                                            )}
-                                            prefetch="hover"
-                                        >
-                                            View Course
-                                        </Link>
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button asChild>
+                                            <Link
+                                                href={route(
+                                                    'courses.show',
+                                                    course.slug,
+                                                )}
+                                                prefetch="hover"
+                                            >
+                                                View Course
+                                            </Link>
+                                        </Button>
+                                        {auth?.user && (
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                asChild
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        'student.courses.wishlist.toggle',
+                                                        course.id,
+                                                    )}
+                                                    method="post"
+                                                >
+                                                    <Heart
+                                                        className={`h-4 w-4 ${course.is_wishlisted ? 'fill-current text-red-500' : ''}`}
+                                                    />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </div>
                                 </CardFooter>
                             </Card>
                         ))}

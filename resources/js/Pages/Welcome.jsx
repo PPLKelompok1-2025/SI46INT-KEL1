@@ -7,14 +7,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 export default function Welcome({
-    auth,
     featuredCategories,
     statistics,
     testimonials,
 }) {
+    const { auth } = usePage().props;
+    const user = auth?.user;
+
     return (
         <>
             <Head title="Coursepedia - Online Learning Platform" />
@@ -49,10 +51,16 @@ export default function Welcome({
                             </Link>
                         </div>
                         <div className="flex space-x-4">
-                            {auth.user ? (
+                            {user &&
+                            (user.role === 'instructor' ||
+                                user.role === 'admin') ? (
                                 <Button asChild>
                                     <Link
-                                        href={route('dashboard')}
+                                        href={
+                                            auth.user.role === 'instructor'
+                                                ? route('instructor.dashboard')
+                                                : route('admin.dashboard')
+                                        }
                                         prefetch="hover"
                                     >
                                         Dashboard

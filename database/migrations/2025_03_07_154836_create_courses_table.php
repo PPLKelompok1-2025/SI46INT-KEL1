@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->text('short_description');
+            $table->text('short_description')->nullable();
             $table->decimal('price', 8, 2)->default(0.00);
             $table->string('level')->default('beginner'); // beginner, intermediate, advanced
             $table->string('language')->default('English');

@@ -13,6 +13,7 @@ class Transaction extends Model
         'user_id',
         'course_id',
         'transaction_id',
+        'order_id',
         'amount',
         'instructor_amount',
         'currency',
@@ -20,10 +21,12 @@ class Transaction extends Model
         'status',
         'paid_at',
         'type',
+        'payment_details',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
+        'payment_details' => 'array',
     ];
 
     public function user()

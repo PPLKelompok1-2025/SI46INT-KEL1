@@ -113,6 +113,19 @@ class TransactionController extends Controller
             'total_revenue' => Transaction::where('status', '!=', 'refunded')->sum('amount'),
             'total_refunded' => Transaction::where('status', 'refunded')->sum('amount'),
             'recent_transactions' => Transaction::whereDate('created_at', '>=', now()->subDays(30))->count(),
+            'completed_count' => Transaction::where('status', 'completed')->count(),
+            'pending_count' => Transaction::where('status', 'pending')->count(),
+            'failed_count' => Transaction::where('status', 'failed')->count(),
+            'refunded_count' => Transaction::where('status', 'refunded')->count(),
+            'avg_transaction' => Transaction::where('status', 'completed')->avg('amount') ?? 0,
+            'most_used_payment' => DB::table('transactions')
+                ->select('payment_method', DB::raw('count(*) as count'))
+                ->whereNotNull('payment_method')
+                ->groupBy('payment_method')
+                ->orderByDesc('count')
+                ->first(),
+            'purchase_count' => Transaction::where('type', 'purchase')->count(),
+            'payout_count' => Transaction::where('type', 'payout')->count(),
         ];
 
         return Inertia::render('Admin/Transactions/Index', [

@@ -6,17 +6,40 @@ import WelcomeCard from '@/Components/Student/WelcomeCard';
 import { Button } from '@/Components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { BookOpen } from 'lucide-react';
+import { Head, Link, router, usePage, WhenVisible } from '@inertiajs/react';
+import { BookOpen, CheckCircle } from 'lucide-react';
 
 export default function Dashboard({
     enrolledCourses,
     inProgressCourses,
     completedCourses,
     certificates,
-    // recentActivities,
+    activeTab = 'in-progress',
+    page,
+    inProgressPage,
+    completedPage,
+    certificatesPage,
+    isEnrolledNextPageExists,
+    isInProgressNextPageExists,
+    isCompletedNextPageExists,
+    isCertificatesNextPageExists,
+    totalCounts,
 }) {
     const { auth } = usePage().props;
+
+    const handleTabChange = (value) => {
+        router.get(
+            route('student.dashboard'),
+            { tab: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['activeTab'],
+                replace: true,
+            },
+        );
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Student Dashboard" />
@@ -28,23 +51,27 @@ export default function Dashboard({
                     </h1>
 
                     <Button asChild>
-                        <Link href="/courses">Browse Courses</Link>
+                        <Link href="/courses" prefetch="hover">
+                            Browse Courses
+                        </Link>
                     </Button>
                 </div>
 
-                {/* Welcome Card */}
                 <WelcomeCard
                     userName={auth.user.name}
-                    inProgressCourses={inProgressCourses}
+                    inProgressCount={totalCounts.inProgress}
                 />
 
-                {/* Stats Overview */}
                 <StatsOverview
-                    enrolledCourses={enrolledCourses}
-                    certificates={certificates}
+                    enrolledCount={totalCounts.enrolled}
+                    certificatesCount={totalCounts.certificates}
                 />
 
-                <Tabs defaultValue="in-progress" className="space-y-4">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="space-y-4"
+                >
                     <TabsList>
                         <TabsTrigger value="in-progress">
                             In Progress
@@ -60,15 +87,44 @@ export default function Dashboard({
 
                     <TabsContent value="in-progress" className="space-y-4">
                         {inProgressCourses.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {inProgressCourses.map((course) => (
-                                    <CourseCard
-                                        key={course.id}
-                                        course={course}
-                                        type="in-progress"
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {inProgressCourses.map((course) => (
+                                        <CourseCard
+                                            key={course.id}
+                                            course={course}
+                                        />
+                                    ))}
+                                </div>
+                                {isInProgressNextPageExists && (
+                                    <div className="mt-8">
+                                        <WhenVisible
+                                            always
+                                            params={{
+                                                in_progress_page:
+                                                    Number(inProgressPage) + 1,
+                                                tab: activeTab,
+                                            }}
+                                            only={[
+                                                'inProgressCourses',
+                                                'inProgressPage',
+                                                'isInProgressNextPageExists',
+                                            ]}
+                                            fallback={
+                                                <div className="flex justify-center">
+                                                    <p className="text-muted-foreground">
+                                                        You've reached the end.
+                                                    </p>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="flex justify-center">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                            </div>
+                                        </WhenVisible>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <EmptyState
                                 icon={BookOpen}
@@ -82,18 +138,48 @@ export default function Dashboard({
 
                     <TabsContent value="completed" className="space-y-4">
                         {completedCourses.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {completedCourses.map((course) => (
-                                    <CourseCard
-                                        key={course.id}
-                                        course={course}
-                                        type="completed"
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {completedCourses.map((course) => (
+                                        <CourseCard
+                                            key={course.id}
+                                            course={course}
+                                            type="completed"
+                                        />
+                                    ))}
+                                </div>
+                                {isCompletedNextPageExists && (
+                                    <div className="mt-8">
+                                        <WhenVisible
+                                            always
+                                            params={{
+                                                completed_page:
+                                                    Number(completedPage) + 1,
+                                                tab: activeTab,
+                                            }}
+                                            only={[
+                                                'completedCourses',
+                                                'completedPage',
+                                                'isCompletedNextPageExists',
+                                            ]}
+                                            fallback={
+                                                <div className="flex justify-center">
+                                                    <p className="text-muted-foreground">
+                                                        You've reached the end.
+                                                    </p>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="flex justify-center">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                            </div>
+                                        </WhenVisible>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <EmptyState
-                                icon="CheckCircle"
+                                icon={CheckCircle}
                                 title="No completed courses yet"
                                 description="Keep learning to complete your courses and earn certificates!"
                                 buttonText="View In-Progress Courses"
@@ -104,24 +190,48 @@ export default function Dashboard({
 
                     <TabsContent value="all-courses" className="space-y-4">
                         {enrolledCourses.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {enrolledCourses.map((course) => (
-                                    <CourseCard
-                                        key={course.id}
-                                        course={course}
-                                        type={
-                                            course.progress?.percentage === 100
-                                                ? 'completed'
-                                                : 'in-progress'
-                                        }
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {enrolledCourses.map((course) => (
+                                        <CourseCard
+                                            key={course.id}
+                                            course={course}
+                                        />
+                                    ))}
+                                </div>
+                                {isEnrolledNextPageExists && (
+                                    <div className="mt-8">
+                                        <WhenVisible
+                                            always
+                                            params={{
+                                                page: Number(page) + 1,
+                                                tab: activeTab,
+                                            }}
+                                            only={[
+                                                'enrolledCourses',
+                                                'page',
+                                                'isEnrolledNextPageExists',
+                                            ]}
+                                            fallback={
+                                                <div className="flex justify-center">
+                                                    <p className="text-muted-foreground">
+                                                        You've reached the end.
+                                                    </p>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="flex justify-center">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                            </div>
+                                        </WhenVisible>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <EmptyState
                                 icon={BookOpen}
                                 title="No enrolled courses"
-                                description="Start your learning journey by enrolling in a course!"
+                                description="Start learning by enrolling in a course today!"
                                 buttonText="Browse Courses"
                                 buttonLink="/courses"
                             />
@@ -130,20 +240,50 @@ export default function Dashboard({
 
                     <TabsContent value="certificates" className="space-y-4">
                         {certificates.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {certificates.map((certificate) => (
-                                    <CertificateCard
-                                        key={certificate.id}
-                                        certificate={certificate}
-                                        userName={auth.user.name}
-                                    />
-                                ))}
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {certificates.map((certificate) => (
+                                        <CertificateCard
+                                            key={certificate.id}
+                                            certificate={certificate}
+                                        />
+                                    ))}
+                                </div>
+                                {isCertificatesNextPageExists && (
+                                    <div className="mt-8">
+                                        <WhenVisible
+                                            always
+                                            params={{
+                                                certificates_page:
+                                                    Number(certificatesPage) +
+                                                    1,
+                                                tab: activeTab,
+                                            }}
+                                            only={[
+                                                'certificates',
+                                                'certificatesPage',
+                                                'isCertificatesNextPageExists',
+                                            ]}
+                                            fallback={
+                                                <div className="flex justify-center">
+                                                    <p className="text-muted-foreground">
+                                                        You've reached the end.
+                                                    </p>
+                                                </div>
+                                            }
+                                        >
+                                            <div className="flex justify-center">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                            </div>
+                                        </WhenVisible>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <EmptyState
-                                icon="Award"
-                                title="No certificates earned yet"
-                                description="Complete courses to earn certificates of achievement!"
+                                icon={CheckCircle}
+                                title="No certificates yet"
+                                description="Complete courses to earn certificates!"
                                 buttonText="View In-Progress Courses"
                                 buttonLink="/student/dashboard?tab=in-progress"
                             />

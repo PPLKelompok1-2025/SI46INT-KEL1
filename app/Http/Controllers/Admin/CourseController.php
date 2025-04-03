@@ -50,7 +50,6 @@ class CourseController extends Controller
             }
         }
 
-        // Handle sorting with a single 'sort' parameter
         if ($request->has('sort') && $request->sort) {
             $sortField = 'created_at';
             $sortDirection = 'desc';
@@ -88,12 +87,10 @@ class CourseController extends Controller
 
         $courses = $query->paginate(10)->withQueryString();
 
-        // Add average rating as an appended attribute
         foreach ($courses as $course) {
             $course->append('average_rating');
         }
 
-        // Get categories for filter dropdown
         $categories = Category::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Admin/Courses/Index', [

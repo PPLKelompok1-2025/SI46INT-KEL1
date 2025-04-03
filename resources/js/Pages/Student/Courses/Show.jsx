@@ -1,4 +1,14 @@
 import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import {
@@ -23,22 +33,46 @@ import { Progress } from '@/Components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Textarea } from '@/Components/ui/textarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, WhenVisible } from '@inertiajs/react';
 import {
     AlertCircle,
     CheckCircle,
     Clock,
     Lock as LockIcon,
+    MessageSquare,
+    Pencil,
     Star,
     User,
 } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
-export default function Show({ course, isEnrolled, progress, hasReviewed }) {
-    const { post, processing } = useForm();
+export default function Show({
+    course,
+    isEnrolled,
+    progress,
+    hasReviewed,
+    hasPendingReview,
+    activeTab = 'overview',
+    reviews = [],
+    page = 1,
+    isNextPageExists = false,
+}) {
     const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
-    const [rating, setRating] = useState(5);
-    const [comment, setComment] = useState('');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const {
+        post,
+        put,
+        delete: destroy,
+        processing,
+        errors,
+        setData,
+        data,
+        reset,
+    } = useForm({
+        rating: course.review ? course.review.rating : 5,
+        comment: course.review ? course.review.comment : '',
+    });
 
     const handleEnroll = () => {
         post(route('student.courses.enroll', course.slug));
@@ -46,13 +80,72 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
 
     const handleSubmitReview = (e) => {
         e.preventDefault();
-        post(route('student.courses.review', course.slug), {
-            rating,
-            comment,
-            onSuccess: () => {
-                setIsReviewDialogOpen(false);
+
+        if (hasReviewed) {
+            put(
+                route('student.courses.review.update', [
+                    course.id,
+                    course.review.id,
+                ]),
+                {
+                    onSuccess: () => {
+                        setIsReviewDialogOpen(false);
+                        toast.success('Review updated successfully!');
+                    },
+                    onError: (err) => {
+                        toast.error('Failed to update review', err.message);
+                    },
+                    preserveState: true,
+                    preserveScroll: true,
+                },
+            );
+        } else {
+            post(route('student.courses.review', course.id), {
+                onSuccess: () => {
+                    setIsReviewDialogOpen(false);
+                    toast.success('Review submitted successfully!');
+                },
+                onError: (err) => {
+                    toast.error('Failed to submit review', err.message);
+                },
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleTabChange = (value) => {
+        router.get(
+            route('student.courses.show', course.slug),
+            { tab: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['activeTab'],
+                replace: true,
             },
-        });
+        );
+    };
+
+    const handleDeleteReview = () => {
+        destroy(
+            route('student.courses.review.delete', [
+                course.id,
+                course.review.id,
+            ]),
+            {
+                onSuccess: () => {
+                    setIsDeleteDialogOpen(false);
+                    toast.success('Review deleted successfully!');
+                },
+                onError: (err) => {
+                    toast.error('Failed to delete review', err.message);
+                },
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+        reset();
     };
 
     return (
@@ -74,7 +167,7 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                 <Link
                                     href={route(
                                         'student.courses.learn',
-                                        course.slug,
+                                        course.id,
                                     )}
                                 >
                                     {progress?.percentage === 100
@@ -124,7 +217,7 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                 <Link
                                     href={route(
                                         'student.courses.learn',
-                                        course.slug,
+                                        course.id,
                                     )}
                                 >
                                     Continue Learning
@@ -134,7 +227,11 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                     </Card>
                 )}
 
-                <Tabs defaultValue="overview" className="space-y-4">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="space-y-4"
+                >
                     <TabsList>
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
@@ -215,7 +312,8 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                             {lesson.title}
                                                         </p>
                                                         <p className="text-sm text-muted-foreground">
-                                                            {lesson.duration ||
+                                                            {lesson.duration +
+                                                                ' mins' ||
                                                                 'N/A'}{' '}
                                                             •{' '}
                                                             {lesson.type ||
@@ -262,17 +360,46 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                     </TabsContent>
 
                     <TabsContent value="reviews" className="space-y-4">
+                        {hasPendingReview && (
+                            <Alert className="mb-4 flex items-center bg-amber-50 dark:bg-amber-950/50">
+                                <div className="flex items-center gap-4">
+                                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                                    <div className="flex flex-col gap-1">
+                                        <AlertTitle className="text-amber-800 dark:text-amber-400">
+                                            Review Pending Approval
+                                        </AlertTitle>
+                                        <AlertDescription className="text-amber-700 dark:text-amber-300">
+                                            Your review has been submitted and
+                                            is awaiting approval from our
+                                            administrators. It will be visible
+                                            to other students once approved.
+                                        </AlertDescription>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    className="ml-auto"
+                                    type="button"
+                                    onClick={() => setIsReviewDialogOpen(true)}
+                                    variant="outline"
+                                >
+                                    Edit Review
+                                </Button>
+                            </Alert>
+                        )}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>Student Reviews</CardTitle>
-                                {isEnrolled && !hasReviewed && (
+                                {isEnrolled && (
                                     <Dialog
                                         open={isReviewDialogOpen}
                                         onOpenChange={setIsReviewDialogOpen}
                                     >
-                                        <DialogTrigger asChild>
-                                            <Button>Write a Review</Button>
-                                        </DialogTrigger>
+                                        {!hasReviewed && (
+                                            <DialogTrigger asChild>
+                                                <Button>Write a Review</Button>
+                                            </DialogTrigger>
+                                        )}
                                         <DialogContent>
                                             <DialogHeader>
                                                 <DialogTitle>
@@ -288,7 +415,10 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                 <div className="space-y-4 py-4">
                                                     <div className="space-y-2">
                                                         <Label htmlFor="rating">
-                                                            Rating
+                                                            Rating{' '}
+                                                            <span className="text-red-500">
+                                                                *
+                                                            </span>
                                                         </Label>
                                                         <div className="flex gap-1">
                                                             {[
@@ -298,7 +428,8 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                                     key={star}
                                                                     type="button"
                                                                     onClick={() =>
-                                                                        setRating(
+                                                                        setData(
+                                                                            'rating',
                                                                             star,
                                                                         )
                                                                     }
@@ -307,7 +438,7 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                                     <Star
                                                                         className={`h-6 w-6 ${
                                                                             star <=
-                                                                            rating
+                                                                            data.rating
                                                                                 ? 'fill-yellow-400 text-yellow-400'
                                                                                 : 'text-gray-300'
                                                                         }`}
@@ -315,6 +446,11 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                                 </button>
                                                             ))}
                                                         </div>
+                                                        {errors.rating && (
+                                                            <div className="mt-1 text-sm text-red-500">
+                                                                {errors.rating}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label htmlFor="comment">
@@ -322,36 +458,87 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                         </Label>
                                                         <Textarea
                                                             id="comment"
-                                                            value={comment}
+                                                            value={data.comment}
                                                             onChange={(e) =>
-                                                                setComment(
+                                                                setData(
+                                                                    'comment',
                                                                     e.target
                                                                         .value,
                                                                 )
                                                             }
                                                             placeholder="Share your experience with this course..."
                                                             rows={5}
-                                                            required
                                                         />
+                                                        {errors.comment && (
+                                                            <div className="mt-1 text-sm text-red-500">
+                                                                {errors.comment}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <DialogFooter>
+                                                    {hasReviewed && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            onClick={() => {
+                                                                setIsReviewDialogOpen(
+                                                                    false,
+                                                                );
+                                                                setIsDeleteDialogOpen(
+                                                                    true,
+                                                                );
+                                                            }}
+                                                        >
+                                                            Delete Review
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         type="submit"
                                                         disabled={processing}
                                                     >
-                                                        Submit Review
+                                                        {hasReviewed
+                                                            ? 'Update Review'
+                                                            : 'Submit Review'}
                                                     </Button>
                                                 </DialogFooter>
                                             </form>
                                         </DialogContent>
                                     </Dialog>
                                 )}
+                                <AlertDialog
+                                    open={isDeleteDialogOpen}
+                                    onOpenChange={setIsDeleteDialogOpen}
+                                >
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>
+                                                Are you sure?
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will permanently delete
+                                                your review. This action cannot
+                                                be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>
+                                                Cancel
+                                            </AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleDeleteReview}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                                Delete
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </CardHeader>
                             <CardContent>
-                                {course.reviews && course.reviews.length > 0 ? (
+                                {reviews && reviews.length > 0 ? (
                                     <div className="space-y-4">
-                                        {course.reviews.map((review) => (
+                                        {reviews.map((review) => (
                                             <div
                                                 key={review.id}
                                                 className="rounded-lg border p-4"
@@ -364,6 +551,18 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                         <span className="font-medium">
                                                             {review.user?.name}
                                                         </span>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="ml-2"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                setIsReviewDialogOpen(
+                                                                    true,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
                                                     <div className="flex items-center">
                                                         {[...Array(5)].map(
@@ -382,26 +581,59 @@ export default function Show({ course, isEnrolled, progress, hasReviewed }) {
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">
+                                                    {review.comment}
+                                                </p>
+                                                <p className="mt-2 text-xs text-gray-500">
                                                     {new Date(
                                                         review.created_at,
                                                     ).toLocaleDateString()}
                                                 </p>
-                                                <p className="mt-2">
-                                                    {review.comment}
-                                                </p>
                                             </div>
                                         ))}
+                                        {isNextPageExists && (
+                                            <WhenVisible
+                                                always
+                                                href={route(
+                                                    'student.courses.show',
+                                                    course.slug,
+                                                )}
+                                                params={{
+                                                    data: {
+                                                        page: Number(page) + 1,
+                                                        tab: 'reviews',
+                                                    },
+                                                    only: [
+                                                        'reviews',
+                                                        'page',
+                                                        'isNextPageExists',
+                                                    ],
+                                                    preserveScroll: true,
+                                                }}
+                                                fallback={
+                                                    <div className="flex justify-center">
+                                                        <p className="text-muted-foreground">
+                                                            You've reached the
+                                                            end.
+                                                        </p>
+                                                    </div>
+                                                }
+                                            >
+                                                <div className="flex justify-center">
+                                                    <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                                                </div>
+                                            </WhenVisible>
+                                        )}
                                     </div>
                                 ) : (
-                                    <Alert>
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>No reviews yet</AlertTitle>
-                                        <AlertDescription>
-                                            This course doesn't have any reviews
-                                            yet. Be the first to share your
-                                            experience!
-                                        </AlertDescription>
-                                    </Alert>
+                                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                                        <MessageSquare className="mb-2 h-12 w-12 text-gray-300" />
+                                        <h3 className="text-lg font-medium">
+                                            No reviews yet
+                                        </h3>
+                                        <p className="text-muted-foreground">
+                                            Be the first to review this course
+                                        </p>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>

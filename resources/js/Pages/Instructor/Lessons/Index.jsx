@@ -33,28 +33,41 @@ import {
     Video,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 export default function Index({ course, lessons }) {
     const [reordering, setReordering] = useState(false);
     const [orderedLessons, setOrderedLessons] = useState([...lessons]);
 
-    const handleDelete = (lessonId) => {
+    const handleDelete = (lesson) => {
         if (confirm('Are you sure you want to delete this lesson?')) {
-            router.delete(route('instructor.lessons.destroy', lessonId), {
-                onSuccess: () => {
-                    // toast({
-                    //     title: 'Lesson deleted',
-                    //     description:
-                    //         'The lesson has been deleted successfully.',
-                    // });
+            router.delete(
+                route('instructor.courses.lessons.destroy', [
+                    course.id,
+                    lesson.id,
+                ]),
+                {
+                    onSuccess: () => {
+                        toast({
+                            title: 'Lesson deleted',
+                            description:
+                                'The lesson has been deleted successfully.',
+                        });
+                    },
+                    onError: (error) => {
+                        toast({
+                            title: 'Error',
+                            description: error.message,
+                            variant: 'destructive',
+                        });
+                    },
                 },
-            });
+            );
         }
     };
 
     const handleReorder = () => {
         if (reordering) {
-            // Save the new order
             router.post(
                 route('instructor.courses.lessons.reorder', course.id),
                 {
@@ -202,8 +215,8 @@ export default function Index({ course, lessons }) {
                                             <TableCell className="font-medium">
                                                 <Link
                                                     href={route(
-                                                        'instructor.lessons.show',
-                                                        lesson.id,
+                                                        'instructor.courses.lessons.show',
+                                                        [course.id, lesson.id],
                                                     )}
                                                     className="hover:underline"
                                                 >
@@ -260,8 +273,11 @@ export default function Index({ course, lessons }) {
                                                         >
                                                             <Link
                                                                 href={route(
-                                                                    'instructor.lessons.edit',
-                                                                    lesson.id,
+                                                                    'instructor.courses.lessons.edit',
+                                                                    [
+                                                                        course.id,
+                                                                        lesson.id,
+                                                                    ],
                                                                 )}
                                                             >
                                                                 <Edit className="mr-2 h-4 w-4" />{' '}
@@ -273,8 +289,11 @@ export default function Index({ course, lessons }) {
                                                         >
                                                             <Link
                                                                 href={route(
-                                                                    'instructor.lessons.show',
-                                                                    lesson.id,
+                                                                    'instructor.courses.lessons.show',
+                                                                    [
+                                                                        course.id,
+                                                                        lesson.id,
+                                                                    ],
                                                                 )}
                                                             >
                                                                 <Video className="mr-2 h-4 w-4" />{' '}
@@ -284,7 +303,7 @@ export default function Index({ course, lessons }) {
                                                         <DropdownMenuItem
                                                             onClick={() =>
                                                                 handleDelete(
-                                                                    lesson.id,
+                                                                    lesson,
                                                                 )
                                                             }
                                                         >

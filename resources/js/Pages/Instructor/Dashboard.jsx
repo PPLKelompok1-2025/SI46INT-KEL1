@@ -223,7 +223,7 @@ export default function Dashboard({
                                                 <div className="h-12 w-12 overflow-hidden rounded-md">
                                                     <img
                                                         src={
-                                                            course.thumbnail_url ||
+                                                            course.thumbnail ||
                                                             '/images/course-placeholder.jpg'
                                                         }
                                                         alt={course.title}

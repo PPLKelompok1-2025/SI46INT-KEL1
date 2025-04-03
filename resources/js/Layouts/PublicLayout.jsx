@@ -7,8 +7,8 @@ export default function PublicLayout({ children, title }) {
 
     return (
         <div className="flex min-h-screen flex-col bg-background">
-            <header className="border-b bg-background py-4">
-                <div className="container mx-auto flex items-center justify-between">
+            <header className="sticky top-0 z-20 border-b bg-background py-4">
+                <div className="container mx-auto flex items-center justify-between px-6">
                     <Link
                         href="/"
                         className="flex items-center"
@@ -41,15 +41,34 @@ export default function PublicLayout({ children, title }) {
                     </div>
                     <div className="flex items-center gap-4">
                         {user ? (
-                            <Button asChild>
-                                <Link
-                                    href={route('logout')}
-                                    prefetch="hover"
-                                    method="post"
-                                >
-                                    Log out
-                                </Link>
-                            </Button>
+                            <>
+                                {user.role === 'instructor' ||
+                                user.role === 'admin' ? (
+                                    <Button asChild>
+                                        <Link
+                                            href={
+                                                user.role === 'instructor'
+                                                    ? route(
+                                                          'instructor.dashboard',
+                                                      )
+                                                    : route('admin.dashboard')
+                                            }
+                                            prefetch="hover"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    </Button>
+                                ) : null}
+                                <Button variant="destructive" asChild>
+                                    <Link
+                                        href={route('logout')}
+                                        prefetch="hover"
+                                        method="post"
+                                    >
+                                        Log out
+                                    </Link>
+                                </Button>
+                            </>
                         ) : (
                             <>
                                 <Link
@@ -74,7 +93,7 @@ export default function PublicLayout({ children, title }) {
             </header>
 
             <main className="flex-1 py-8">
-                <div className="container mx-auto">
+                <div className="container mx-auto px-6">
                     {title && (
                         <h1 className="mb-8 text-3xl font-bold">{title}</h1>
                     )}

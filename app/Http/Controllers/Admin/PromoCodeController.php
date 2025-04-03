@@ -92,6 +92,26 @@ class PromoCodeController extends Controller
                         $q->whereNull('end_date')
                           ->orWhere('end_date', '>=', now());
                     })
+                    ->where(function ($q) {
+                        $q->whereNull('max_uses')
+                          ->orWhereRaw('used_count < max_uses');
+                    })
+                    ->count(),
+                'expired' => PromoCodes::where(function ($q) {
+                        $q->where('is_active', false)
+                          ->orWhere(function ($sq) {
+                              $sq->whereNotNull('end_date')
+                                 ->where('end_date', '<', now());
+                          })
+                          ->orWhere(function ($sq) {
+                              $sq->whereNotNull('max_uses')
+                                 ->whereRaw('used_count >= max_uses');
+                          });
+                    })
+                    ->count(),
+                'used' => PromoCodes::where('used_count', '>', 0)->count(),
+                'totalTransactions' => DB::table('transactions')
+                    ->whereNotNull('promo_code_id')
                     ->count(),
                 'totalDiscounts' => DB::table('transactions')
                     ->whereNotNull('promo_code_id')

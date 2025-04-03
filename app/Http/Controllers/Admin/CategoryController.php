@@ -67,6 +67,7 @@ class CategoryController extends Controller
         $stats = [
             'total' => Category::count(),
             'parent' => Category::whereNull('parent_id')->count(),
+            'child' => Category::whereNotNull('parent_id')->count(),
             'totalCourses' => Course::count(),
         ];
 

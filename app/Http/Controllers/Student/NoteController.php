@@ -14,19 +14,28 @@ class NoteController extends Controller
     /**
      * Display a listing of the student's notes.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
+        $page = $request->input('page', 1);
+        $perPage = 9;
 
-        $notes = Note::where('user_id', $user->id)
+        $query = Note::where('user_id', $user->id)
             ->with('course')
-            ->orderBy('updated_at', 'desc')
-            ->get();
+            ->orderBy('updated_at', 'desc');
+
+        $paginatedNotes = $query->paginate($perPage);
+        
+        $pagination = $paginatedNotes->toArray();
+        $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
 
         return Inertia::render('Student/Notes/Index', [
-            'notes' => $notes
+            'notes' => Inertia::merge($paginatedNotes->items()),
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists
         ]);
     }
 

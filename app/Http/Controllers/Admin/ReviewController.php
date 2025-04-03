@@ -160,6 +160,20 @@ class ReviewController extends Controller
     }
 
     /**
+     * Approve a review.
+     *
+     * @param  \App\Models\Review  $review
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function approve(Review $review)
+    {
+        $isApproved = $review->is_approved;
+        $review->update(['is_approved' => !$isApproved]);
+
+        return redirect()->back()->with('success', 'Review approved');
+    }
+
+    /**
      * Approve a review that was reported.
      *
      * @param  \App\Models\Review  $review

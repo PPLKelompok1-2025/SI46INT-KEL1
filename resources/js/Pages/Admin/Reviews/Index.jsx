@@ -1,13 +1,7 @@
 import StarRating from '@/Components/StarRating';
+import TableTemplate from '@/Components/TableTemplate';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/Components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -16,132 +10,29 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
-import { Input } from '@/Components/ui/input';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/Components/ui/pagination';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/Components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { debounce } from 'lodash';
 import {
     AlertCircle,
+    CheckCircle,
     Edit,
     Eye,
     Filter,
-    Search,
     Star,
     Trash,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 export default function Index({
-    auth,
     reviews,
-    filters,
+    filters = {},
     courses,
     instructors,
     stats,
 }) {
-    const { data, setData } = useForm({
-        search: filters.search || '',
-        course_id: filters.course_id || 'all',
-        instructor_id: filters.instructor_id || 'all',
-        rating: filters.rating || 'all',
-        reported: filters.reported || 'all',
-        sort: filters.sort || 'created_at_desc',
-    });
-
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
-
-    const debouncedSearch = debounce((value) => {
-        setData('search', value);
-        applyFilters();
-    }, 500);
-
-    const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setData('search', value);
-        debouncedSearch(value);
-    };
-
-    const applyFilters = useCallback(() => {
-        router.get(
-            route('admin.reviews.index'),
-            {
-                search: data.search,
-                course_id: data.course_id,
-                instructor_id: data.instructor_id,
-                rating: data.rating,
-                reported: data.reported,
-                sort: data.sort,
-            },
-            {
-                preserveState: false,
-                preserveScroll: true,
-                only: [],
-            },
-        );
-    }, [
-        data.search,
-        data.course_id,
-        data.instructor_id,
-        data.rating,
-        data.reported,
-        data.sort,
-    ]);
-
-    const handleFilterChange = (field, value) => {
-        setData((prevData) => ({
-            ...prevData,
-            [field]: value,
-        }));
-
-        router.get(
-            route('admin.reviews.index'),
-            {
-                ...data,
-                [field]: value,
-            },
-            {
-                preserveState: false,
-                preserveScroll: true,
-                only: [],
-            },
-        );
-    };
-
-    const resetFilters = () => {
-        router.get(route('admin.reviews.index'), {}, { preserveState: false });
-    };
 
     const confirmDelete = (review) => {
         setReviewToDelete(review);
@@ -150,12 +41,224 @@ export default function Index({
 
     const handleDelete = () => {
         router.delete(route('admin.reviews.destroy', reviewToDelete.id), {
-            onSuccess: () => setDeleteDialogOpen(false),
+            preserveScroll: true,
+            // onError: (err) => {
+            //     toast.error('Failed to delete review', err.message);
+            // },
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setReviewToDelete(null);
+                // toast.success('Review deleted!');
+            },
         });
     };
 
+    const handleApprove = (review) => {
+        router.patch(route('admin.reviews.approve', review.id), {
+            preserveScroll: true,
+            // onError: (err) => {
+            //     toast.error(
+            //         `Failed to ${review.is_approved ? 'un' : ''}approve review`,
+            //         err.message,
+            //     );
+            // },
+            onSuccess: () => {
+                setReviewToDelete(null);
+                // toast.success('Review approved!');
+            },
+        });
+    };
+
+    const columns = [
+        {
+            label: 'Rating',
+            key: 'rating',
+            className: 'w-[80px]',
+            render: (review) => (
+                <div className="flex items-center">
+                    <StarRating rating={review.rating} size="sm" />
+                    <span className="ml-1 text-sm">{review.rating}</span>
+                </div>
+            ),
+        },
+        {
+            label: 'Review',
+            key: 'comment',
+            render: (review) => (
+                <div className="max-w-xs truncate">
+                    {review.comment
+                        ? review.comment.substring(0, 100) +
+                          (review.comment.length > 100 ? '...' : '')
+                        : 'No comment'}
+                </div>
+            ),
+        },
+        {
+            label: 'Course',
+            key: 'course.title',
+            render: (review) => (
+                <Link
+                    href={route('admin.reviews.course', review.course.id)}
+                    className="text-blue-600 hover:underline"
+                >
+                    {review.course.title}
+                </Link>
+            ),
+        },
+        {
+            label: 'Student',
+            key: 'user.name',
+            render: (review) => review.user.name,
+        },
+        {
+            label: 'Instructor',
+            key: 'course.user.name',
+            render: (review) => review.course.user.name,
+        },
+        {
+            label: 'Date',
+            key: 'created_at',
+            className: 'w-[100px]',
+            render: (review) => (
+                <span className="text-sm">
+                    {format(new Date(review.created_at), 'MMM d, yyyy')}
+                </span>
+            ),
+        },
+        {
+            label: 'Status',
+            key: 'is_reported',
+            className: 'w-[100px]',
+            render: (review) =>
+                review.is_reported ? (
+                    <Badge variant="destructive">Reported</Badge>
+                ) : (
+                    <Badge variant="outline">Active</Badge>
+                ),
+        },
+        {
+            label: 'Actions',
+            key: 'actions',
+            className: 'w-[100px] text-right',
+            cellClassName: 'text-right',
+            render: (review) => (
+                <div className="flex justify-end space-x-2">
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href={route('admin.reviews.show', review.id)}>
+                            <Eye className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleApprove(review)}
+                    >
+                        <CheckCircle
+                            className={
+                                ('h-4 w-4',
+                                !review.is_approved
+                                    ? 'text-green-500'
+                                    : 'text-red-500')
+                            }
+                        />
+                    </Button>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link href={route('admin.reviews.edit', review.id)}>
+                            <Edit className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => confirmDelete(review)}
+                    >
+                        <Trash className="h-4 w-4" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
+    const filterOptions = {
+        searchEnabled: true,
+        searchPlaceholder: 'Search reviews...',
+        selectFilters: {
+            course_id: {
+                label: 'Course',
+                placeholder: 'Filter by course',
+                allLabel: 'All Courses',
+                options: courses.map((course) => ({
+                    value: course.id.toString(),
+                    label: course.title,
+                })),
+            },
+            instructor_id: {
+                label: 'Instructor',
+                placeholder: 'Filter by instructor',
+                allLabel: 'All Instructors',
+                options: instructors.map((instructor) => ({
+                    value: instructor.id.toString(),
+                    label: instructor.name,
+                })),
+            },
+            rating: {
+                label: 'Rating',
+                placeholder: 'Filter by rating',
+                allLabel: 'All Ratings',
+                options: [5, 4, 3, 2, 1].map((rating) => ({
+                    value: rating.toString(),
+                    label: `${rating} Star${rating !== 1 ? 's' : ''}`,
+                })),
+            },
+            reported: {
+                label: 'Status',
+                placeholder: 'Filter by status',
+                allLabel: 'All Reviews',
+                options: [{ value: '1', label: 'Reported Only' }],
+            },
+        },
+        sortOptions: [
+            { value: 'created_at_desc', label: 'Newest First' },
+            { value: 'created_at_asc', label: 'Oldest First' },
+            { value: 'rating_desc', label: 'Rating High to Low' },
+            { value: 'rating_asc', label: 'Rating Low to High' },
+        ],
+        defaultSort: filters.sort || 'created_at_desc',
+    };
+
+    const statsConfig = {
+        items: [
+            {
+                title: 'Total Reviews',
+                value: stats.total,
+                description: 'From all students',
+                icon: <Eye className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+                title: 'Reported Reviews',
+                value: stats.reported,
+                description: 'Flagged by users',
+                icon: <AlertCircle className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+                title: 'Average Rating',
+                value: stats.average_rating,
+                description: 'Across all courses',
+                icon: <Star className="h-4 w-4 text-muted-foreground" />,
+            },
+        ],
+    };
+
+    const emptyState = {
+        icon: <Filter className="mb-4 h-12 w-12 text-muted-foreground" />,
+        title: 'No reviews found',
+        description:
+            "Try adjusting your search or filters to find what you're looking for.",
+        noFilterDescription: 'There are no reviews in the system yet.',
+    };
+
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="Review Management" />
 
             <div className="space-y-6">
@@ -172,497 +275,17 @@ export default function Index({
                     </Link>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Reviews
-                            </CardTitle>
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.total}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Reported Reviews
-                            </CardTitle>
-                            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.reported}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Average Rating
-                            </CardTitle>
-                            <Star className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.average_rating}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>All Reviews</CardTitle>
-                        <CardDescription>
-                            Manage course reviews across the platform
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="Search reviews..."
-                                    className="pl-8"
-                                    value={data.search}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <Select
-                                value={data.course_id}
-                                onValueChange={(value) =>
-                                    handleFilterChange('course_id', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by course" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Courses
-                                    </SelectItem>
-                                    {courses.map((course) => (
-                                        <SelectItem
-                                            key={course.id}
-                                            value={course.id.toString()}
-                                        >
-                                            {course.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={data.instructor_id}
-                                onValueChange={(value) =>
-                                    handleFilterChange('instructor_id', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by instructor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Instructors
-                                    </SelectItem>
-                                    {instructors.map((instructor) => (
-                                        <SelectItem
-                                            key={instructor.id}
-                                            value={instructor.id.toString()}
-                                        >
-                                            {instructor.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={data.rating}
-                                onValueChange={(value) =>
-                                    handleFilterChange('rating', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by rating" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Ratings
-                                    </SelectItem>
-                                    {[5, 4, 3, 2, 1].map((rating) => (
-                                        <SelectItem
-                                            key={rating}
-                                            value={rating.toString()}
-                                        >
-                                            {rating} Star{rating !== 1 && 's'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={data.reported}
-                                onValueChange={(value) =>
-                                    handleFilterChange('reported', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Reviews
-                                    </SelectItem>
-                                    <SelectItem value="1">
-                                        Reported Only
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={data.sort}
-                                onValueChange={(value) =>
-                                    handleFilterChange('sort', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Sort by" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="created_at_desc">
-                                        Newest First
-                                    </SelectItem>
-                                    <SelectItem value="created_at_asc">
-                                        Oldest First
-                                    </SelectItem>
-                                    <SelectItem value="rating_desc">
-                                        Rating High to Low
-                                    </SelectItem>
-                                    <SelectItem value="rating_asc">
-                                        Rating Low to High
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {(data.search ||
-                                data.course_id !== 'all' ||
-                                data.instructor_id !== 'all' ||
-                                data.rating !== 'all' ||
-                                data.reported !== 'all' ||
-                                data.sort !== 'created_at_desc') && (
-                                <Button
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    className="whitespace-nowrap"
-                                >
-                                    Clear Filters
-                                </Button>
-                            )}
-                        </div>
-
-                        {reviews.data.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center p-8 text-center">
-                                <Filter className="mb-4 h-12 w-12 text-muted-foreground" />
-                                <h3 className="mb-2 text-lg font-medium">
-                                    No reviews found
-                                </h3>
-                                <p className="text-muted-foreground">
-                                    {data.search ||
-                                    data.course_id !== 'all' ||
-                                    data.instructor_id !== 'all' ||
-                                    data.rating !== 'all' ||
-                                    data.reported !== 'all'
-                                        ? "Try adjusting your filters to find what you're looking for."
-                                        : 'There are no reviews in the system yet.'}
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="rounded-lg border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[80px]">
-                                                    Rating
-                                                </TableHead>
-                                                <TableHead>Review</TableHead>
-                                                <TableHead>Course</TableHead>
-                                                <TableHead>Student</TableHead>
-                                                <TableHead>
-                                                    Instructor
-                                                </TableHead>
-                                                <TableHead className="w-[100px]">
-                                                    Date
-                                                </TableHead>
-                                                <TableHead className="w-[100px]">
-                                                    Status
-                                                </TableHead>
-                                                <TableHead className="w-[100px] text-right">
-                                                    Actions
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {reviews.data.map((review) => (
-                                                <TableRow key={review.id}>
-                                                    <TableCell>
-                                                        <div className="flex items-center">
-                                                            <StarRating
-                                                                rating={
-                                                                    review.rating
-                                                                }
-                                                                size="sm"
-                                                            />
-                                                            <span className="ml-1 text-sm">
-                                                                {review.rating}
-                                                            </span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="max-w-xs truncate">
-                                                        {review.comment
-                                                            ? review.comment.substring(
-                                                                  0,
-                                                                  100,
-                                                              ) +
-                                                              (review.comment
-                                                                  .length > 100
-                                                                  ? '...'
-                                                                  : '')
-                                                            : 'No comment'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Link
-                                                            href={route(
-                                                                'admin.reviews.course',
-                                                                review.course
-                                                                    .id,
-                                                            )}
-                                                            className="text-blue-600 hover:underline"
-                                                        >
-                                                            {
-                                                                review.course
-                                                                    .title
-                                                            }
-                                                        </Link>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {review.user.name}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {
-                                                            review.course.user
-                                                                .name
-                                                        }
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {format(
-                                                            new Date(
-                                                                review.created_at,
-                                                            ),
-                                                            'MMM d, yyyy',
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {review.is_reported ? (
-                                                            <Badge variant="destructive">
-                                                                Reported
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline">
-                                                                Active
-                                                            </Badge>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex justify-end space-x-2">
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            asChild
-                                                                        >
-                                                                            <Link
-                                                                                href={route(
-                                                                                    'admin.reviews.show',
-                                                                                    review.id,
-                                                                                )}
-                                                                            >
-                                                                                <Eye className="h-4 w-4" />
-                                                                            </Link>
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>
-                                                                            View
-                                                                            review
-                                                                            details
-                                                                        </p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            asChild
-                                                                        >
-                                                                            <Link
-                                                                                href={route(
-                                                                                    'admin.reviews.edit',
-                                                                                    review.id,
-                                                                                )}
-                                                                            >
-                                                                                <Edit className="h-4 w-4" />
-                                                                            </Link>
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>
-                                                                            Edit
-                                                                            review
-                                                                        </p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            onClick={() =>
-                                                                                confirmDelete(
-                                                                                    review,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <Trash className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>
-                                                                            Delete
-                                                                            review
-                                                                        </p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-
-                                <div className="mt-4">
-                                    <Pagination className="justify-end">
-                                        <PaginationContent>
-                                            {reviews.links.map((link, i) => {
-                                                if (
-                                                    !link.url &&
-                                                    link.label === '...'
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationEllipsis />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                if (
-                                                    link.label.includes(
-                                                        'Previous',
-                                                    )
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationPrevious
-                                                                onClick={() =>
-                                                                    link.url &&
-                                                                    router.visit(
-                                                                        link.url,
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    !link.url
-                                                                }
-                                                                className={
-                                                                    !link.url
-                                                                        ? 'pointer-events-none opacity-50'
-                                                                        : 'cursor-pointer'
-                                                                }
-                                                            />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                if (
-                                                    link.label.includes('Next')
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationNext
-                                                                onClick={() =>
-                                                                    link.url &&
-                                                                    router.visit(
-                                                                        link.url,
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    !link.url
-                                                                }
-                                                                className={
-                                                                    !link.url
-                                                                        ? 'pointer-events-none opacity-50'
-                                                                        : 'cursor-pointer'
-                                                                }
-                                                            />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <PaginationItem key={i}>
-                                                        <PaginationLink
-                                                            onClick={() =>
-                                                                link.url &&
-                                                                router.visit(
-                                                                    link.url,
-                                                                )
-                                                            }
-                                                            isActive={
-                                                                link.active
-                                                            }
-                                                            disabled={!link.url}
-                                                            className={
-                                                                !link.url
-                                                                    ? 'pointer-events-none opacity-50'
-                                                                    : 'cursor-pointer'
-                                                            }
-                                                        >
-                                                            {link.label}
-                                                        </PaginationLink>
-                                                    </PaginationItem>
-                                                );
-                                            })}
-                                        </PaginationContent>
-                                    </Pagination>
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
+                <TableTemplate
+                    title="Reviews"
+                    description="Manage course reviews across the platform"
+                    columns={columns}
+                    data={reviews}
+                    filterOptions={filterOptions}
+                    filters={filters}
+                    routeName="admin.reviews.index"
+                    stats={statsConfig}
+                    emptyState={emptyState}
+                />
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

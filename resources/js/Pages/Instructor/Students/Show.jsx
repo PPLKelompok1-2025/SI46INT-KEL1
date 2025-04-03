@@ -1,3 +1,4 @@
+import TableTemplate from '@/Components/TableTemplate';
 import { Button } from '@/Components/ui/button';
 import {
     Card,
@@ -7,19 +8,64 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import { Progress } from '@/Components/ui/progress';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, BookOpen, Calendar, CheckCircle, User } from 'lucide-react';
 
-export default function Show({ enrollment, progress }) {
+export default function Show({
+    enrollment,
+    completedLessons,
+    progress,
+    filters,
+}) {
+    const columns = [
+        {
+            label: 'Lesson',
+            key: 'title',
+            render: (lesson) => (
+                <div className="font-medium">{lesson.title}</div>
+            ),
+        },
+        {
+            label: 'Completed At',
+            key: 'completed_at',
+            render: (lesson) => (
+                <div className="flex items-center">
+                    <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {new Date(lesson.completed_at).toLocaleString()}
+                </div>
+            ),
+        },
+        {
+            label: 'Status',
+            key: 'status',
+            render: () => (
+                <div className="flex items-center">
+                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                    <span>Completed</span>
+                </div>
+            ),
+        },
+    ];
+
+    const filterOptions = {
+        searchEnabled: true,
+        searchPlaceholder: 'Search lessons...',
+        sortOptions: [
+            { value: 'completed_at_desc', label: 'Most Recently Completed' },
+            { value: 'completed_at_asc', label: 'Oldest Completed First' },
+            { value: 'title_asc', label: 'Lesson Title (A-Z)' },
+            { value: 'title_desc', label: 'Lesson Title (Z-A)' },
+        ],
+        defaultSort: filters.sort || 'completed_at_desc',
+    };
+
+    const emptyState = {
+        icon: <BookOpen className="mb-4 h-12 w-12 text-muted-foreground" />,
+        title: 'No lessons completed',
+        description: "This student hasn't completed any lessons yet.",
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title={`${enrollment.user.name} - Student Details`} />
@@ -150,53 +196,17 @@ export default function Show({ enrollment, progress }) {
                     </Card>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Completed Lessons</CardTitle>
-                        <CardDescription>
-                            Lessons the student has completed in this course
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Lesson</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {enrollment.completedLessons &&
-                                enrollment.completedLessons.length > 0 ? (
-                                    enrollment.completedLessons.map(
-                                        (lesson) => (
-                                            <TableRow key={lesson.id}>
-                                                <TableCell className="font-medium">
-                                                    {lesson.title}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center">
-                                                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                                                        <span>Completed</span>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ),
-                                    )
-                                ) : (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={2}
-                                            className="h-24 text-center"
-                                        >
-                                            No lessons completed yet.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                <TableTemplate
+                    title="Completed Lessons"
+                    description="Lessons the student has completed in this course"
+                    columns={columns}
+                    data={completedLessons}
+                    filterOptions={filterOptions}
+                    filters={filters}
+                    routeName="instructor.students.show"
+                    routeParams={{ enrollment: enrollment.id }}
+                    emptyState={emptyState}
+                />
 
                 <div className="flex justify-end">
                     <Button asChild>

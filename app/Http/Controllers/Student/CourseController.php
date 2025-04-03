@@ -11,6 +11,8 @@ use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
 
 class CourseController extends Controller
 {
@@ -19,29 +21,47 @@ class CourseController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
+        $page = $request->input('page', 1);
+        $perPage = 9;
 
-        $enrolledCourses = $user->enrollments()
+        $enrollmentsQuery = $user->enrollments()
             ->with(['course' => function ($query) {
-                $query->with(['user', 'category', 'lessons']);
-            }])
-            ->get()
+                $query->with(['user', 'category'])
+                      ->withCount('lessons')
+                      ->withAvg('reviews', 'rating');
+            }]);
+
+        $paginatedEnrollments = $enrollmentsQuery->paginate($perPage);
+
+        $enrolledCourses = $paginatedEnrollments->getCollection()
             ->map(function ($enrollment) {
                 $course = $enrollment->course;
+
                 $course->progress = [
-                    'percentage' => $enrollment->progress_percentage,
-                    'completed_lessons' => $enrollment->completed_lessons_count,
-                    'total_lessons' => $course->lessons->count(),
+                    'percentage' => $enrollment->progress,
+                    'completed_lessons' => $enrollment->completedLessons()->count(),
+                    'total_lessons' => $course->lessons_count,
+                    'last_accessed' => $enrollment->updated_at,
                 ];
+
                 $course->enrollment_id = $enrollment->id;
-                $course->enrollment_status = $enrollment->status;
+                $course->enrollment_status = $enrollment->completed_at ? 'completed' : 'in-progress';
+                $course->enrolled_at = $enrollment->created_at;
+                $course->average_rating = $course->getAverageRatingAttribute() ?? 0;
+
                 return $course;
             });
 
+        $pagination = $paginatedEnrollments->toArray();
+        $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
+
         return Inertia::render('Student/Courses/Index', [
-            'courses' => $enrolledCourses
+            'courses' => $enrolledCourses,
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists
         ]);
     }
 
@@ -49,45 +69,91 @@ class CourseController extends Controller
      * Display the specified course.
      *
      * @param  \App\Models\Course  $course
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function show(Course $course)
+    public function show(Request $request, Course $course)
     {
         $user = Auth::user();
 
-        // Load course with relationships
-        $course->load(['user', 'category', 'lessons', 'reviews' => function ($query) {
-            $query->where('is_approved', true);
-        }]);
+        $course->load([
+            'user:id,name',
+            'category:id,name',
+            'lessons' => function ($query) {
+                $query->orderBy('order')->select('id', 'course_id', 'title', 'duration', 'is_free', 'order');
+            }
+        ]);
 
-        // Check if student is enrolled
+        $totalDuration = $course->lessons->sum('duration');
+        $course->duration = $totalDuration > 0 ? round($totalDuration / 60, 1) : 0;
+
         $enrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->first();
 
         $isEnrolled = !is_null($enrollment);
 
-        // Get progress if enrolled
         $progress = null;
         if ($isEnrolled) {
+            $completedLessonIds = $enrollment->completedLessons()->pluck('lesson_id')->toArray();
+            $completedLessonsCount = count($completedLessonIds);
+            $totalLessonsCount = $course->lessons->count();
+
+            $progressPercentage = $totalLessonsCount > 0
+                ? round(($completedLessonsCount / $totalLessonsCount) * 100, 2)
+                : 0;
+
             $progress = [
-                'percentage' => $enrollment->progress_percentage,
-                'completed_lessons' => $enrollment->completed_lessons_count,
-                'total_lessons' => $course->lessons->count(),
-                'last_accessed' => $enrollment->last_accessed_at,
+                'percentage' => $progressPercentage,
+                'completed_lessons' => $completedLessonsCount,
+                'total_lessons' => $totalLessonsCount,
+                'last_accessed' => $enrollment->updated_at,
+                'completedLessons' => $completedLessonIds,
             ];
         }
 
-        // Check if student has reviewed this course
+        $course->append('average_rating');
+
         $hasReviewed = Review::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->exists();
+
+        $hasPendingReview = Review::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->where('is_approved', false)
+            ->exists();
+
+        if (isset($course->requirements) && !is_array($course->requirements)) {
+            $course->requirements = json_decode($course->requirements) ?? [];
+        }
+
+        if (isset($course->what_you_will_learn) && !is_array($course->what_you_will_learn)) {
+            $course->what_you_will_learn = json_decode($course->what_you_will_learn) ?? [];
+        }
+
+        $page = $request->input('page', 1);
+        $perPage = 5;
+
+        $reviewsQuery = $course->reviews()
+            ->where('is_approved', true)
+            ->with('user:id,name,profile_photo_path')
+            ->select('id', 'course_id', 'user_id', 'rating', 'comment', 'created_at')
+            ->orderByDesc('created_at');
+
+        $reviews = $reviewsQuery->paginate($perPage);
+        $reviewsPagination = $reviews->toArray();
+        $isNextPageExists = $reviewsPagination['current_page'] < $reviewsPagination['last_page'];
 
         return Inertia::render('Student/Courses/Show', [
             'course' => $course,
             'isEnrolled' => $isEnrolled,
             'progress' => $progress,
             'hasReviewed' => $hasReviewed,
+            'hasPendingReview' => $hasPendingReview,
+            'activeTab' => $request->query('tab', 'overview'),
+            'reviews' => Inertia::merge($reviews->items()),
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists
         ]);
     }
 
@@ -101,7 +167,6 @@ class CourseController extends Controller
     {
         $user = Auth::user();
 
-        // Check if student is enrolled
         $enrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->first();
@@ -111,20 +176,25 @@ class CourseController extends Controller
                 ->with('error', 'You must be enrolled in this course to access the learning materials.');
         }
 
-        // Load course with relationships
         $course->load(['lessons' => function ($query) {
             $query->orderBy('order');
         }]);
 
-        // Get completed lessons
+        $totalDuration = $course->lessons->sum('duration');
+        $course->duration = $totalDuration > 0 ? round($totalDuration / 60, 1) : 0;
+
         $completedLessons = $enrollment->completedLessons()->pluck('lesson_id')->toArray();
+        $completedLessonsCount = count($completedLessons);
+        $totalLessonsCount = $course->lessons->count();
 
-        // Update last accessed timestamp
-        $enrollment->update([
-            'last_accessed_at' => now()
-        ]);
+        $progressPercentage = $totalLessonsCount > 0
+            ? round(($completedLessonsCount / $totalLessonsCount) * 100, 2)
+            : 0;
 
-        // Find the next lesson to continue (first incomplete lesson or first lesson)
+        // $enrollment->update([
+        //     'last_accessed_at' => now()
+        // ]);
+
         $nextLesson = $course->lessons->first(function ($lesson) use ($completedLessons) {
             return !in_array($lesson->id, $completedLessons);
         }) ?? $course->lessons->first();
@@ -134,9 +204,10 @@ class CourseController extends Controller
             'completedLessons' => $completedLessons,
             'nextLesson' => $nextLesson,
             'progress' => [
-                'percentage' => $enrollment->progress_percentage,
-                'completed_lessons' => count($completedLessons),
-                'total_lessons' => $course->lessons->count(),
+                'percentage' => $progressPercentage,
+                'completed_lessons' => $completedLessonsCount,
+                'total_lessons' => $totalLessonsCount,
+                'last_accessed' => $enrollment->updated_at,
             ]
         ]);
     }
@@ -152,7 +223,6 @@ class CourseController extends Controller
     {
         $user = Auth::user();
 
-        // Check if student is enrolled
         $enrollment = Enrollment::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->first();
@@ -162,36 +232,28 @@ class CourseController extends Controller
                 ->with('error', 'You must be enrolled in this course to access the lessons.');
         }
 
-        // Check if lesson belongs to the course
         if ($lesson->course_id !== $course->id) {
             return redirect()->route('student.courses.learn', $course->slug)
                 ->with('error', 'The requested lesson does not belong to this course.');
         }
 
-        // Load course with all lessons for navigation
         $course->load(['lessons' => function ($query) {
             $query->orderBy('order');
         }]);
-
-        // Load lesson with its content and attachments
         $lesson->load(['quizzes', 'assignments']);
 
-        // Get completed lessons
         $completedLessons = $enrollment->completedLessons()->pluck('lesson_id')->toArray();
 
-        // Check if this lesson is completed
         $isCompleted = in_array($lesson->id, $completedLessons);
 
-        // Get previous and next lessons for navigation
         $lessonIds = $course->lessons->pluck('id')->toArray();
         $currentIndex = array_search($lesson->id, $lessonIds);
         $previousLesson = $currentIndex > 0 ? $course->lessons[$currentIndex - 1] : null;
         $nextLesson = $currentIndex < count($lessonIds) - 1 ? $course->lessons[$currentIndex + 1] : null;
 
-        // Update last accessed timestamp
-        $enrollment->update([
-            'last_accessed_at' => now()
-        ]);
+        // $enrollment->update([
+        //     'last_accessed_at' => now()
+        // ]);
 
         return Inertia::render('Student/Courses/Lesson', [
             'course' => $course,
@@ -209,44 +271,53 @@ class CourseController extends Controller
     }
 
     /**
-     * Display the student's wishlist.
+     * Display the student's wishlisted courses.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function wishlist()
+    public function wishlist(Request $request)
     {
         $user = Auth::user();
+        $page = $request->input('page', 1);
+        $perPage = 9;
 
-        $wishlistedCourses = $user->wishlistedCourses()
-            ->with(['user', 'category', 'lessons'])
-            ->get()
-            ->map(function ($course) use ($user) {
-                // Check if the user is enrolled in this course
-                $enrollment = Enrollment::where('user_id', $user->id)
-                    ->where('course_id', $course->id)
-                    ->first();
+        $wishlistQuery = $user->wishlistedCourses()
+            ->with(['user', 'category', 'lessons']);
 
-                $course->is_enrolled = !is_null($enrollment);
+        $paginatedWishlist = $wishlistQuery->paginate($perPage);
 
-                return $course;
-            });
+        // $wishlistedCourses = $paginatedWishlist->getCollection()
+        //     ->map(function ($course) use ($user) {
+        //         $enrollment = Enrollment::where('user_id', $user->id)
+        //             ->where('course_id', $course->id)
+        //             ->first();
+
+        //         $course->is_enrolled = !is_null($enrollment);
+
+        //         return $course;
+        //     });
+
+        $pagination = $paginatedWishlist->toArray();
+        $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
 
         return Inertia::render('Student/Wishlist', [
-            'courses' => $wishlistedCourses
+            'courses' => Inertia::merge($paginatedWishlist->items()),
+            'page' => $page,
+            'isNextPageExists' => $isNextPageExists
         ]);
     }
 
     /**
-     * Add a course to the student's wishlist.
+     * Toggle student's wishlist.
      *
      * @param  \App\Models\Course  $course
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function addToWishlist(Course $course)
+    public function toggleWishlist(Course $course)
     {
         $user = Auth::user();
 
-        // Check if the course is already in the wishlist
         $existingWishlist = Wishlist::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->first();
@@ -260,7 +331,9 @@ class CourseController extends Controller
             return redirect()->back()->with('success', 'Course added to wishlist');
         }
 
-        return redirect()->back()->with('info', 'Course is already in your wishlist');
+        $existingWishlist->delete();
+
+        return redirect()->back()->with('success', 'Course removed from wishlist');
     }
 
     /**
@@ -281,21 +354,104 @@ class CourseController extends Controller
     }
 
     /**
-     * Check if a course is in the student's wishlist.
+     * Stream encrypted video for students.
      *
-     * @param  \App\Models\Course  $course
-     * @return \Illuminate\Http\JsonResponse
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Lesson  $lesson
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
      */
-    public function isWishlisted(Course $course)
+    public function streamVideo(Request $request, Lesson $lesson)
+    {
+        $course = $lesson->course;
+        $user = Auth::user();
+
+        // Check if user is enrolled in the course or if the lesson is free
+        $isEnrolled = $course->enrollments()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->exists();
+
+        if (!$isEnrolled && !$lesson->is_free) {
+            return Response::json(['error' => 'Unauthorized access. You must be enrolled in this course to access this video.'], 403);
+        }
+
+        if (!$lesson->hasEncryptedVideo()) {
+            return Response::json(['error' => 'No video available'], 404);
+        }
+
+        // For .m3u8 playlist file
+        if ($request->has('playlist')) {
+            $path = Storage::disk($lesson->video_disk)->path($lesson->video_path);
+            return Response::file($path);
+        }
+
+        // For .ts segment files
+        if ($request->has('segment')) {
+            $segmentPath = dirname($lesson->video_path) . '/' . $request->segment;
+            $path = Storage::disk($lesson->video_disk)->path($segmentPath);
+            return Response::file($path);
+        }
+
+        // For .key file
+        if ($request->has('key')) {
+            // Ensure this is authenticated and authorized - we already checked above
+            if (!$lesson->encryption_key) {
+                return Response::json(['error' => 'No encryption key available'], 404);
+            }
+
+            return Response::make($lesson->encryption_key)
+                ->header('Content-Type', 'application/octet-stream');
+        }
+
+        return Response::json(['error' => 'Invalid request'], 400);
+    }
+
+    public function review(Course $course, Request $request)
     {
         $user = Auth::user();
 
-        $isWishlisted = Wishlist::where('user_id', $user->id)
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:255',
+        ]);
+
+        $hasReviewed = Review::where('user_id', $user->id)
             ->where('course_id', $course->id)
             ->exists();
 
-        return response()->json([
-            'isWishlisted' => $isWishlisted
+        if ($hasReviewed) {
+            return redirect()->back()->with('error', 'You have already reviewed this course.');
+        }
+
+        $review = Review::create([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+            'is_approved' => false,
         ]);
+
+        return redirect()->back()->with('success', 'Review submitted successfully');
+    }
+
+    public function updateReview(Course $course, Review $review, Request $request)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:255',
+        ]);
+
+        $review->update([
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        return redirect()->back()->with('success', 'Review updated successfully');
+    }
+
+    public function deleteReview(Course $course, Review $review)
+    {
+        $review->delete();
+        return redirect()->back()->with('success', 'Review deleted successfully');
     }
 }

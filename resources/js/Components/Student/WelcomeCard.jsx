@@ -3,7 +3,16 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Link } from '@inertiajs/react';
 import { PlayCircle } from 'lucide-react';
 
-export default function WelcomeCard({ userName, inProgressCourses }) {
+export default function WelcomeCard({
+    userName,
+    inProgressCount,
+    inProgressCourses = [],
+}) {
+    const hasInProgressCourses =
+        inProgressCourses?.length > 0 ||
+        (inProgressCount && inProgressCount > 0);
+    const progressCount = inProgressCourses?.length || inProgressCount || 0;
+
     return (
         <Card className="bg-gradient-to-r from-primary/20 to-primary/5">
             <CardContent className="p-6">
@@ -11,12 +20,12 @@ export default function WelcomeCard({ userName, inProgressCourses }) {
                     Welcome back, {userName}!
                 </h2>
                 <p className="mb-4 text-muted-foreground">
-                    {inProgressCourses.length > 0
-                        ? `You have ${inProgressCourses.length} course${inProgressCourses.length > 1 ? 's' : ''} in progress. Keep learning!`
+                    {hasInProgressCourses
+                        ? `You have ${progressCount} course${progressCount > 1 ? 's' : ''} in progress. Keep learning!`
                         : 'Ready to start learning? Browse our courses and begin your journey!'}
                 </p>
 
-                {inProgressCourses.length > 0 && (
+                {inProgressCourses && inProgressCourses.length > 0 && (
                     <Button variant="outline" asChild>
                         <Link
                             href={`/courses/${inProgressCourses[0].id}/learn`}

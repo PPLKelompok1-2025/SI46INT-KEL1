@@ -338,7 +338,7 @@ export default function AuthenticatedLayout({ children }) {
             </div>
 
             {/* Toast notifications */}
-            <Toaster position="top-right" />
+            <Toaster position="bottom-right" />
         </div>
     );
 }

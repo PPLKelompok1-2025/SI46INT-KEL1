@@ -1,11 +1,6 @@
+import TableTemplate from '@/Components/TableTemplate';
+import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/Components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -14,109 +9,42 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
-import { Input } from '@/Components/ui/input';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/Components/ui/pagination';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/Components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { debounce } from 'lodash';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
     CheckCircle,
     Edit,
     Eye,
     PlusCircle,
-    Search,
     Tag,
     Trash,
     XCircle,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
-export default function Index({ promoCodes, filters, stats }) {
-    const { data, setData } = useForm({
-        search: filters.search || '',
-        status: filters.status || 'all',
-        sort: filters.sort || 'created_at_desc',
-    });
+export default function Index({ promoCodes, filters = {}, stats }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [promoCodeToDelete, setPromoCodeToDelete] = useState(null);
 
-    const debouncedSearch = debounce((value) => {
-        setData('search', value);
-        applyFilters();
-    }, 500);
-
-    const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setData('search', value);
-        debouncedSearch(value);
+    const confirmDelete = (promoCode) => {
+        if (promoCode.transactions_count > 0) {
+            return;
+        }
+        setPromoCodeToDelete(promoCode);
+        setDeleteDialogOpen(true);
     };
 
-    const applyFilters = useCallback(() => {
-        router.get(
-            route('admin.promo-codes.index'),
+    const handleDelete = () => {
+        router.delete(
+            route('admin.promo-codes.destroy', promoCodeToDelete.id),
             {
-                search: data.search,
-                status: data.status,
-                sort: data.sort,
+                onSuccess: () => {
+                    setDeleteDialogOpen(false);
+                    setPromoCodeToDelete(null);
+                },
             },
-            {
-                preserveState: false,
-                preserveScroll: true,
-                only: [],
-            },
-        );
-    }, [data.search, data.status, data.sort]);
-
-    const handleFilterChange = (field, value) => {
-        setData((prevData) => ({
-            ...prevData,
-            [field]: value,
-        }));
-
-        router.get(
-            route('admin.promo-codes.index'),
-            {
-                ...data,
-                [field]: value,
-            },
-            {
-                preserveState: false,
-                preserveScroll: true,
-                only: [],
-            },
-        );
-    };
-
-    const resetFilters = () => {
-        router.get(
-            route('admin.promo-codes.index'),
-            {},
-            { preserveState: false },
         );
     };
 
@@ -145,21 +73,177 @@ export default function Index({ promoCodes, filters, stats }) {
         return false;
     };
 
-    const confirmDelete = (promoCode) => {
-        if (promoCode.transactions_count > 0) {
-            return;
-        }
-        setPromoCodeToDelete(promoCode);
-        setDeleteDialogOpen(true);
+    const columns = [
+        {
+            label: 'Code',
+            key: 'code',
+            render: (promoCode) => (
+                <div>
+                    <div className="font-medium">{promoCode.code}</div>
+                    {promoCode.description && (
+                        <div className="text-xs text-muted-foreground">
+                            {promoCode.description}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            label: 'Type',
+            key: 'discount_type',
+            render: (promoCode) => (
+                <Badge variant="outline">
+                    {promoCode.discount_type === 'percentage'
+                        ? 'Percentage'
+                        : 'Fixed'}
+                </Badge>
+            ),
+        },
+        {
+            label: 'Value',
+            key: 'discount_value',
+            render: (promoCode) => (
+                <span className="font-medium">
+                    {promoCode.discount_type === 'percentage'
+                        ? `${promoCode.discount_value}%`
+                        : formatCurrency(promoCode.discount_value)}
+                </span>
+            ),
+        },
+        {
+            label: 'Usage',
+            key: 'used_count',
+            render: (promoCode) => (
+                <div>
+                    <div>
+                        {promoCode.used_count}/{promoCode.max_uses ?? '∞'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        {promoCode.transactions_count} transactions
+                    </div>
+                </div>
+            ),
+        },
+        {
+            label: 'Valid Until',
+            key: 'end_date',
+            render: (promoCode) => formatDate(promoCode.end_date),
+        },
+        {
+            label: 'Status',
+            key: 'is_active',
+            render: (promoCode) =>
+                isExpired(promoCode) ? (
+                    <span className="flex items-center text-destructive">
+                        <XCircle className="mr-1 h-4 w-4" />
+                        Expired
+                    </span>
+                ) : (
+                    <span className="flex items-center text-green-600">
+                        <CheckCircle className="mr-1 h-4 w-4" />
+                        Active
+                    </span>
+                ),
+        },
+        {
+            label: 'Actions',
+            key: 'actions',
+            className: 'text-right',
+            cellClassName: 'text-right',
+            render: (promoCode) => (
+                <div className="flex justify-end space-x-2">
+                    <Button variant="outline" size="icon" asChild>
+                        <Link
+                            href={route('admin.promo-codes.show', promoCode.id)}
+                        >
+                            <Eye className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="icon" asChild>
+                        <Link
+                            href={route('admin.promo-codes.edit', promoCode.id)}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => toggleActive(promoCode)}
+                    >
+                        {promoCode.is_active ? (
+                            <XCircle className="h-4 w-4" />
+                        ) : (
+                            <CheckCircle className="h-4 w-4" />
+                        )}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => confirmDelete(promoCode)}
+                        disabled={promoCode.transactions_count > 0}
+                    >
+                        <Trash className="h-4 w-4" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
+    const filterOptions = {
+        searchEnabled: true,
+        searchPlaceholder: 'Search promo codes...',
+        selectFilters: {
+            status: {
+                label: 'Status',
+                placeholder: 'Filter by status',
+                allLabel: 'All Status',
+                options: [
+                    { value: 'active', label: 'Active' },
+                    { value: 'expired', label: 'Expired' },
+                ],
+            },
+        },
+        sortOptions: [
+            { value: 'created_at_desc', label: 'Newest First' },
+            { value: 'created_at_asc', label: 'Oldest First' },
+            { value: 'code_asc', label: 'Code (A-Z)' },
+            { value: 'code_desc', label: 'Code (Z-A)' },
+            { value: 'usage_desc', label: 'Most Used' },
+            { value: 'usage_asc', label: 'Least Used' },
+        ],
+        defaultSort: filters.sort || 'created_at_desc',
     };
 
-    const handleDelete = () => {
-        router.delete(
-            route('admin.promo-codes.destroy', promoCodeToDelete.id),
+    const statsConfig = {
+        items: [
             {
-                onSuccess: () => setDeleteDialogOpen(false),
+                title: 'Total Promo Codes',
+                value: stats.total,
+                description: `${stats.active} active, ${stats.expired} expired`,
+                icon: <Tag className="h-4 w-4 text-muted-foreground" />,
             },
-        );
+            {
+                title: 'Used Promo Codes',
+                value: stats.used,
+                description: `${stats.totalTransactions} transactions`,
+                icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
+            },
+            {
+                title: 'Total Discounts',
+                value: formatCurrency(stats.totalDiscounts),
+                description: 'Across all transactions',
+                icon: <Calendar className="h-4 w-4 text-muted-foreground" />,
+            },
+        ],
+    };
+
+    const emptyState = {
+        icon: <Tag className="mb-4 h-12 w-12 text-muted-foreground" />,
+        title: 'No promo codes found',
+        description:
+            "Try adjusting your search or filters to find what you're looking for.",
+        noFilterDescription: 'There are no promo codes in the system yet.',
     };
 
     return (
@@ -177,394 +261,17 @@ export default function Index({ promoCodes, filters, stats }) {
                     </Button>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Promo Codes
-                            </CardTitle>
-                            <Tag className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.total}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Active Promo Codes
-                            </CardTitle>
-                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.active}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Total Discount Amount
-                            </CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {formatCurrency(stats.totalDiscounts)}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>All Promo Codes</CardTitle>
-                        <CardDescription>
-                            Manage promotional codes across the platform
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="Search promo codes..."
-                                    className="pl-8"
-                                    value={data.search}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <Select
-                                value={data.status}
-                                onValueChange={(value) =>
-                                    handleFilterChange('status', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Status
-                                    </SelectItem>
-                                    <SelectItem value="active">
-                                        Active
-                                    </SelectItem>
-                                    <SelectItem value="expired">
-                                        Expired
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                value={data.sort}
-                                onValueChange={(value) =>
-                                    handleFilterChange('sort', value)
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Sort by" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="created_at_desc">
-                                        Newest First
-                                    </SelectItem>
-                                    <SelectItem value="created_at_asc">
-                                        Oldest First
-                                    </SelectItem>
-                                    <SelectItem value="code_asc">
-                                        Code (A-Z)
-                                    </SelectItem>
-                                    <SelectItem value="code_desc">
-                                        Code (Z-A)
-                                    </SelectItem>
-                                    <SelectItem value="usage_desc">
-                                        Most Used
-                                    </SelectItem>
-                                    <SelectItem value="usage_asc">
-                                        Least Used
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {(data.search || data.status !== 'all') && (
-                                <Button
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    className="whitespace-nowrap"
-                                >
-                                    Clear Filters
-                                </Button>
-                            )}
-                        </div>
-
-                        {promoCodes.data.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center p-8 text-center">
-                                <Tag className="mb-4 h-12 w-12 text-muted-foreground" />
-                                <h3 className="mb-2 text-lg font-medium">
-                                    No promo codes found
-                                </h3>
-                                <p className="text-muted-foreground">
-                                    {data.search || data.status !== 'all'
-                                        ? "Try adjusting your search or filter to find what you're looking for."
-                                        : 'There are no promo codes in the system yet.'}
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="rounded-lg border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Code</TableHead>
-                                                <TableHead>Type</TableHead>
-                                                <TableHead>Value</TableHead>
-                                                <TableHead>Usage</TableHead>
-                                                <TableHead>
-                                                    Valid Until
-                                                </TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">
-                                                    Actions
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {promoCodes.data.map(
-                                                (promoCode) => (
-                                                    <TableRow
-                                                        key={promoCode.id}
-                                                    >
-                                                        <TableCell className="font-medium">
-                                                            <div>
-                                                                {promoCode.code}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {
-                                                                    promoCode.description
-                                                                }
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {promoCode.discount_type ===
-                                                            'percentage'
-                                                                ? 'Percentage'
-                                                                : 'Fixed'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {promoCode.discount_type ===
-                                                            'percentage'
-                                                                ? `${promoCode.discount_value}%`
-                                                                : formatCurrency(
-                                                                      promoCode.discount_value,
-                                                                  )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <div>
-                                                                {
-                                                                    promoCode.used_count
-                                                                }
-                                                                /
-                                                                {promoCode.max_uses ??
-                                                                    '∞'}
-                                                            </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {
-                                                                    promoCode.transactions_count
-                                                                }{' '}
-                                                                transactions
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {formatDate(
-                                                                promoCode.end_date,
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {isExpired(
-                                                                promoCode,
-                                                            ) ? (
-                                                                <span className="flex items-center text-destructive">
-                                                                    <XCircle className="mr-1 h-4 w-4" />
-                                                                    Expired
-                                                                </span>
-                                                            ) : (
-                                                                <span className="flex items-center text-green-600">
-                                                                    <CheckCircle className="mr-1 h-4 w-4" />
-                                                                    Active
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <div className="flex justify-end space-x-2">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    asChild
-                                                                >
-                                                                    <Link
-                                                                        href={route(
-                                                                            'admin.promo-codes.show',
-                                                                            promoCode.id,
-                                                                        )}
-                                                                    >
-                                                                        <Eye className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    asChild
-                                                                >
-                                                                    <Link
-                                                                        href={route(
-                                                                            'admin.promo-codes.edit',
-                                                                            promoCode.id,
-                                                                        )}
-                                                                    >
-                                                                        <Edit className="h-4 w-4" />
-                                                                    </Link>
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        toggleActive(
-                                                                            promoCode,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {promoCode.is_active ? (
-                                                                        <XCircle className="h-4 w-4" />
-                                                                    ) : (
-                                                                        <CheckCircle className="h-4 w-4" />
-                                                                    )}
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() =>
-                                                                        confirmDelete(
-                                                                            promoCode,
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        promoCode.transactions_count >
-                                                                        0
-                                                                    }
-                                                                >
-                                                                    <Trash className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ),
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-
-                                {/* Pagination */}
-                                <div className="mt-4">
-                                    <Pagination className="justify-end">
-                                        <PaginationContent>
-                                            {promoCodes.links.map((link, i) => {
-                                                if (
-                                                    !link.url &&
-                                                    link.label === '...'
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationEllipsis />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                if (
-                                                    link.label.includes(
-                                                        'Previous',
-                                                    )
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationPrevious
-                                                                onClick={() =>
-                                                                    link.url &&
-                                                                    router.visit(
-                                                                        link.url,
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    !link.url
-                                                                }
-                                                                className={
-                                                                    !link.url
-                                                                        ? 'pointer-events-none opacity-50'
-                                                                        : 'cursor-pointer'
-                                                                }
-                                                            />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                if (
-                                                    link.label.includes('Next')
-                                                ) {
-                                                    return (
-                                                        <PaginationItem key={i}>
-                                                            <PaginationNext
-                                                                onClick={() =>
-                                                                    link.url &&
-                                                                    router.visit(
-                                                                        link.url,
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    !link.url
-                                                                }
-                                                                className={
-                                                                    !link.url
-                                                                        ? 'pointer-events-none opacity-50'
-                                                                        : 'cursor-pointer'
-                                                                }
-                                                            />
-                                                        </PaginationItem>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <PaginationItem key={i}>
-                                                        <PaginationLink
-                                                            onClick={() =>
-                                                                link.url &&
-                                                                router.visit(
-                                                                    link.url,
-                                                                )
-                                                            }
-                                                            isActive={
-                                                                link.active
-                                                            }
-                                                            disabled={!link.url}
-                                                            className={
-                                                                !link.url
-                                                                    ? 'pointer-events-none opacity-50'
-                                                                    : 'cursor-pointer'
-                                                            }
-                                                        >
-                                                            {link.label}
-                                                        </PaginationLink>
-                                                    </PaginationItem>
-                                                );
-                                            })}
-                                        </PaginationContent>
-                                    </Pagination>
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
+                <TableTemplate
+                    title="Promo Codes"
+                    description="Manage promotional codes across the platform"
+                    columns={columns}
+                    data={promoCodes}
+                    filterOptions={filterOptions}
+                    filters={filters}
+                    routeName="admin.promo-codes.index"
+                    stats={statsConfig}
+                    emptyState={emptyState}
+                />
             </div>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

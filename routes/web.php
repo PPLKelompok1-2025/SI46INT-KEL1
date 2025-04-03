@@ -19,6 +19,7 @@ use App\Http\Controllers\Instructor\QuestionController;
 use App\Http\Controllers\Instructor\StudentController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
@@ -29,9 +30,9 @@ use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\NoteController as StudentNoteController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 use App\Http\Controllers\Instructor\ReviewController as InstructorReviewController;
-use App\Http\Controllers\Admin\PromoCodeController;
+use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
+use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,9 +67,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
 
     // Payment routes
-    Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
-    Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
-    Route::get('/payment/cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
+    Route::prefix('payment')->name('payment.')->group(function () {
+        // Route::post('/process', [PaymentController::class, 'process'])->name('process');
+        // Route::get('/success', [PaymentController::class, 'success'])->name('success');
+        // Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
+
+        Route::get('/checkout/{course}', [CourseController::class, 'checkout'])->name('checkout');
+
+        // Midtrans payment routes
+        Route::post('/validate-promo', [PromoCodeController::class, 'validatePromoCode'])->name('validate-promo');
+
+        Route::post('/midtrans/token/{course}', [MidtransController::class, 'getSnapToken'])->name('midtrans.token');
+        Route::post('/midtrans/notification', [MidtransController::class, 'handleNotification'])->name('midtrans.notification');
+        Route::get('/midtrans/callback', [MidtransController::class, 'handleCallback'])->name('midtrans.callback');
+    });
 
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -102,6 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reviews/{review}/edit', [App\Http\Controllers\Admin\ReviewController::class, 'edit'])->name('reviews.edit');
         Route::put('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'update'])->name('reviews.update');
         Route::delete('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+        Route::patch('/reviews/{review}/approve', [App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
         Route::patch('/reviews/{review}/approve-reported', [App\Http\Controllers\Admin\ReviewController::class, 'approveReported'])->name('reviews.approve-reported');
         Route::post('/reviews/{review}/respond', [App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
 
@@ -111,8 +124,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/courses', [ReportController::class, 'courses'])->name('reports.courses');
 
         // Promo code management
-        Route::resource('promo-codes', PromoCodeController::class);
-        Route::patch('/promo-codes/{promoCode}/toggle-active', [PromoCodeController::class, 'toggleActive'])->name('promo-codes.toggle-active');
+        Route::resource('promo-codes', AdminPromoCodeController::class);
+        Route::patch('/promo-codes/{promoCode}/toggle-active', [AdminPromoCodeController::class, 'toggleActive'])->name('promo-codes.toggle-active');
     });
 
     // Instructor routes
@@ -132,13 +145,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Lesson routes - nested under courses
         Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
-        Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
-        Route::get('lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('lessons.edit');
+        Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
+        Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
+        Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
         Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
-        Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('lessons.show');
-        Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('lessons.update');
-        Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('lessons.destroy');
-        Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
+        Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
+
+        // Routes for standalone lessons
+        // Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
+        // Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('courses.lessons.update');
+        // Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
+        // Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
+
+        // Video handling routes
+        Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');
+        Route::post('lessons/videos/delete', [LessonController::class, 'deleteTemporaryVideo'])->name('lessons.videos.delete');
+        Route::get('lessons/{lesson}/video', [LessonController::class, 'streamVideo'])->name('lessons.videos.stream');
 
         // Student management
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
@@ -147,7 +169,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/students/{enrollment}', [StudentController::class, 'removeStudent'])->name('students.remove');
 
         // Lesson management
-        Route::resource('courses.lessons', LessonController::class);
+        // Route::resource('courses.lessons', LessonController::class);
 
         // Quiz management
         Route::resource('lessons.quizzes', InstructorQuizController::class);
@@ -178,6 +200,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/courses/{course}/lessons/{lesson}', [StudentCourseController::class, 'lesson'])->name('courses.lessons.show');
         Route::post('/courses/{course}/complete', [EnrollmentController::class, 'complete'])->name('courses.complete');
         Route::post('/lessons/{lesson}/complete', [EnrollmentController::class, 'completeLesson'])->name('lessons.complete');
+        Route::post('/courses/{course}/review', [StudentCourseController::class, 'review'])->name('courses.review');
+        Route::put('/courses/{course}/review/{review}', [StudentCourseController::class, 'updateReview'])->name('courses.review.update');
+        Route::delete('/courses/{course}/review/{review}', [StudentCourseController::class, 'deleteReview'])->name('courses.review.delete');
+
+        // Video streaming route for students
+        Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
 
         // Quiz taking
         Route::get('/quizzes/{quiz}', [StudentQuizController::class, 'show'])->name('quizzes.show');
@@ -196,9 +224,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Wishlist routes
         Route::get('/wishlist', [StudentCourseController::class, 'wishlist'])->name('wishlist');
-        Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'addToWishlist'])->name('courses.wishlist.add');
-        Route::delete('/courses/{course}/wishlist', [StudentCourseController::class, 'removeFromWishlist'])->name('courses.wishlist.remove');
-        Route::get('/courses/{course}/wishlist/check', [StudentCourseController::class, 'isWishlisted'])->name('courses.wishlist.check');
+        Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'toggleWishlist'])->name('courses.wishlist.toggle');
 
         // Notes routes
         Route::get('/notes', [StudentNoteController::class, 'index'])->name('notes.index');
