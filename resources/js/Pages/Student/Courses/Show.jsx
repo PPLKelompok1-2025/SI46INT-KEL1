@@ -70,8 +70,8 @@ export default function Show({
         data,
         reset,
     } = useForm({
-        rating: course.review ? course.review.rating : 5,
-        comment: course.review ? course.review.comment : '',
+        rating: course.signed_in_user_review?.rating || 5,
+        comment: course.signed_in_user_review?.comment || '',
     });
 
     const handleEnroll = () => {
@@ -85,7 +85,7 @@ export default function Show({
             put(
                 route('student.courses.review.update', [
                     course.id,
-                    course.review.id,
+                    course.signed_in_user_review.id,
                 ]),
                 {
                     onSuccess: () => {
@@ -104,6 +104,7 @@ export default function Show({
                 onSuccess: () => {
                     setIsReviewDialogOpen(false);
                     toast.success('Review submitted successfully!');
+                    reset();
                 },
                 onError: (err) => {
                     toast.error('Failed to submit review', err.message);
@@ -131,7 +132,7 @@ export default function Show({
         destroy(
             route('student.courses.review.delete', [
                 course.id,
-                course.review.id,
+                course.signed_in_user_review.id,
             ]),
             {
                 onSuccess: () => {
@@ -146,6 +147,10 @@ export default function Show({
             },
         );
         reset();
+    };
+
+    const handleEditReview = () => {
+        setIsReviewDialogOpen(true);
     };
 
     return (
@@ -380,7 +385,7 @@ export default function Show({
                                 <Button
                                     className="ml-auto"
                                     type="button"
-                                    onClick={() => setIsReviewDialogOpen(true)}
+                                    onClick={handleEditReview}
                                     variant="outline"
                                 >
                                     Edit Review

@@ -9,6 +9,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
@@ -153,28 +159,63 @@ export default function Index({ courses, categories, filters = {}, stats }) {
             cellClassName: 'text-right',
             render: (course) => (
                 <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('instructor.courses.show', course.id)}
-                        >
-                            <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('instructor.courses.edit', course.id)}
-                        >
-                            <Edit className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => confirmDelete(course)}
-                        disabled={course.enrollments_count > 0}
-                    >
-                        <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'instructor.courses.show',
+                                            course.id,
+                                        )}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View course details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'instructor.courses.edit',
+                                            course.id,
+                                        )}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit course details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => confirmDelete(course)}
+                                    disabled={course.enrollments_count > 0}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete course</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ),
         },

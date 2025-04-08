@@ -46,6 +46,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
+Route::get('/quick-search', [LandingController::class, 'search'])->name('quick-search');
 
 // Public routes
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');

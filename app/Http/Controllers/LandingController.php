@@ -28,6 +28,80 @@ class LandingController extends Controller
     }
 
     /**
+     * Handle quick search from the welcome page.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        $results = [
+            'courses' => [],
+            'categories' => [],
+            'instructors' => []
+        ];
+
+        if ($query) {
+            $results['courses'] = Course::where('is_published', true)
+                ->where('is_approved', true)
+                ->where(function($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                      ->orWhere('short_description', 'like', "%{$query}%");
+                })
+                ->with('user:id,name,profile_photo_path')
+                ->take(5)
+                ->get(['id', 'title', 'slug', 'thumbnail', 'user_id'])
+                ->map(function($course) {
+                    return [
+                        'id' => $course->id,
+                        'title' => $course->title,
+                        'slug' => $course->slug,
+                        'thumbnail' => $course->thumbnail,
+                        'instructor' => $course->user->name,
+                        'type' => 'course',
+                        'url' => route('courses.show', $course->slug)
+                    ];
+                });
+
+            $results['categories'] = Category::where('name', 'like', "%{$query}%")
+                ->take(5)
+                ->get(['id', 'name', 'slug', 'icon'])
+                ->map(function($category) {
+                    return [
+                        'id' => $category->id,
+                        'title' => $category->name,
+                        'slug' => $category->slug,
+                        'icon' => $category->icon,
+                        'type' => 'category',
+                        'url' => route('categories.show', $category->slug)
+                    ];
+                });
+
+            $results['instructors'] = User::where('role', 'instructor')
+                ->where(function($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                      ->orWhere('headline', 'like', "%{$query}%");
+                })
+                ->take(5)
+                ->get(['id', 'name', 'profile_photo_path', 'headline'])
+                ->map(function($instructor) {
+                    return [
+                        'id' => $instructor->id,
+                        'title' => $instructor->name,
+                        'subtitle' => $instructor->headline,
+                        'avatar' => $instructor->profile_photo_path ??
+                            "https://ui-avatars.com/api/?name=" . urlencode($instructor->name) . "&color=7F9CF5&background=EBF4FF",
+                        'type' => 'instructor',
+                        'url' => route('courses.index', ['instructor' => $instructor->id])
+                    ];
+                });
+        }
+
+        return response()->json($results);
+    }
+
+    /**
      * Get featured categories for the landing page.
      *
      * @return \Illuminate\Database\Eloquent\Collection

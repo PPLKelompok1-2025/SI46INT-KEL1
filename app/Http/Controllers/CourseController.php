@@ -23,6 +23,7 @@ class CourseController extends Controller
         $level = $request->input('level');
         $search = $request->input('search');
         $sort = $request->input('sort', 'latest');
+        $instructor = $request->input('instructor');
         $page = $request->input('page', 1);
         $perPage = 9;
 
@@ -37,6 +38,10 @@ class CourseController extends Controller
 
         if ($level) {
             $query->where('level', $level);
+        }
+
+        if ($instructor) {
+            $query->where('user_id', $instructor);
         }
 
         if ($search) {
@@ -102,6 +107,7 @@ class CourseController extends Controller
                 'level' => $level,
                 'search' => $search,
                 'sort' => $sort,
+                'instructor' => $instructor,
             ],
             'categories' => $categories,
             'levels' => $levels,

@@ -10,6 +10,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
@@ -143,37 +149,90 @@ export default function Index({
             cellClassName: 'text-right',
             render: (review) => (
                 <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('admin.reviews.show', review.id)}>
-                            <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleApprove(review)}
-                    >
-                        <CheckCircle
-                            className={
-                                ('h-4 w-4',
-                                !review.is_approved
-                                    ? 'text-green-500'
-                                    : 'text-red-500')
-                            }
-                        />
-                    </Button>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('admin.reviews.edit', review.id)}>
-                            <Edit className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => confirmDelete(review)}
-                    >
-                        <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.reviews.show',
+                                            review.id,
+                                        )}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View review details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleApprove(review)}
+                                >
+                                    <CheckCircle
+                                        className={
+                                            ('h-4 w-4',
+                                            !review.is_approved
+                                                ? 'text-green-500'
+                                                : 'text-red-500')
+                                        }
+                                    />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {!review.is_approved
+                                        ? 'Approve'
+                                        : 'Unapprove'}
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.reviews.edit',
+                                            review.id,
+                                        )}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit review</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => confirmDelete(review)}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete review</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ),
         },

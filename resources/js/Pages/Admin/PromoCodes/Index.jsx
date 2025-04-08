@@ -9,6 +9,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link, router } from '@inertiajs/react';
@@ -152,39 +158,89 @@ export default function Index({ promoCodes, filters = {}, stats }) {
             cellClassName: 'text-right',
             render: (promoCode) => (
                 <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('admin.promo-codes.show', promoCode.id)}
-                        >
-                            <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('admin.promo-codes.edit', promoCode.id)}
-                        >
-                            <Edit className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => toggleActive(promoCode)}
-                    >
-                        {promoCode.is_active ? (
-                            <XCircle className="h-4 w-4" />
-                        ) : (
-                            <CheckCircle className="h-4 w-4" />
-                        )}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => confirmDelete(promoCode)}
-                        disabled={promoCode.transactions_count > 0}
-                    >
-                        <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.promo-codes.show',
+                                            promoCode.id,
+                                        )}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View promo code details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.promo-codes.edit',
+                                            promoCode.id,
+                                        )}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View transaction details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => toggleActive(promoCode)}
+                                >
+                                    {promoCode.is_active ? (
+                                        <XCircle className="h-4 w-4 text-red-500" />
+                                    ) : (
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>
+                                    {promoCode.is_active
+                                        ? 'Deactivate'
+                                        : 'Activate'}{' '}
+                                    active status
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => confirmDelete(promoCode)}
+                                    disabled={promoCode.transactions_count > 0}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete promo code</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ),
         },

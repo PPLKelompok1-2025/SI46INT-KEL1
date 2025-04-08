@@ -81,7 +81,7 @@ class CourseController extends Controller
             'category:id,name',
             'lessons' => function ($query) {
                 $query->orderBy('order')->select('id', 'course_id', 'title', 'duration', 'is_free', 'order');
-            }
+            },
         ]);
 
         $totalDuration = $course->lessons->sum('duration');
@@ -123,6 +123,10 @@ class CourseController extends Controller
             ->where('is_approved', false)
             ->exists();
 
+        $signedInUserReview = Review::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+
         if (isset($course->requirements) && !is_array($course->requirements)) {
             $course->requirements = json_decode($course->requirements) ?? [];
         }
@@ -130,6 +134,8 @@ class CourseController extends Controller
         if (isset($course->what_you_will_learn) && !is_array($course->what_you_will_learn)) {
             $course->what_you_will_learn = json_decode($course->what_you_will_learn) ?? [];
         }
+
+        $course->signed_in_user_review = $signedInUserReview;
 
         $page = $request->input('page', 1);
         $perPage = 5;
@@ -287,17 +293,6 @@ class CourseController extends Controller
 
         $paginatedWishlist = $wishlistQuery->paginate($perPage);
 
-        // $wishlistedCourses = $paginatedWishlist->getCollection()
-        //     ->map(function ($course) use ($user) {
-        //         $enrollment = Enrollment::where('user_id', $user->id)
-        //             ->where('course_id', $course->id)
-        //             ->first();
-
-        //         $course->is_enrolled = !is_null($enrollment);
-
-        //         return $course;
-        //     });
-
         $pagination = $paginatedWishlist->toArray();
         $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
 
@@ -332,23 +327,6 @@ class CourseController extends Controller
         }
 
         $existingWishlist->delete();
-
-        return redirect()->back()->with('success', 'Course removed from wishlist');
-    }
-
-    /**
-     * Remove a course from the student's wishlist.
-     *
-     * @param  \App\Models\Course  $course
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function removeFromWishlist(Course $course)
-    {
-        $user = Auth::user();
-
-        Wishlist::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->delete();
 
         return redirect()->back()->with('success', 'Course removed from wishlist');
     }
@@ -444,6 +422,7 @@ class CourseController extends Controller
         $review->update([
             'rating' => $request->rating,
             'comment' => $request->comment,
+            'is_approved' => false,
         ]);
 
         return redirect()->back()->with('success', 'Review updated successfully');

@@ -123,7 +123,7 @@ export default function Index({ courses, page = 1, isNextPageExists = false }) {
                                     </CardContent>
 
                                     <CardFooter>
-                                        <div className="flex w-full items-center justify-between gap-2">
+                                        <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center">
                                             <Button
                                                 variant="outline"
                                                 size="sm"

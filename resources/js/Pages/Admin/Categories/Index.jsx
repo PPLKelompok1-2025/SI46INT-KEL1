@@ -9,6 +9,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -103,31 +109,66 @@ export default function Index({ categories, filters = {}, stats }) {
             cellClassName: 'text-right',
             render: (category) => (
                 <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('admin.categories.show', category.id)}
-                        >
-                            <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link
-                            href={route('admin.categories.edit', category.id)}
-                        >
-                            <Edit className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => confirmDelete(category)}
-                        disabled={
-                            category.courses_count > 0 ||
-                            category.children_count > 0
-                        }
-                    >
-                        <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.categories.show',
+                                            category.id,
+                                        )}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View category details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.categories.edit',
+                                            category.id,
+                                        )}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit category</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => confirmDelete(category)}
+                                    disabled={
+                                        category.courses_count > 0 ||
+                                        category.children_count > 0
+                                    }
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete category</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ),
         },

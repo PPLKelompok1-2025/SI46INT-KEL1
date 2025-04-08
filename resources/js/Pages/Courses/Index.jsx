@@ -45,6 +45,7 @@ export default function Index({
         category: filters.category || '',
         level: filters.level || '',
         sort: filters.sort || 'latest',
+        instructor: filters.instructor || '',
     });
 
     const debouncedSearch = debounce((value) => {
@@ -66,6 +67,7 @@ export default function Index({
                 category: data.category,
                 level: data.level,
                 sort: data.sort,
+                instructor: data.instructor,
             },
             {
                 preserveState: true,
@@ -340,6 +342,7 @@ export default function Index({
                                         category: data.category,
                                         level: data.level,
                                         sort: data.sort,
+                                        instructor: data.instructor,
                                     },
                                     only: [
                                         'courses',

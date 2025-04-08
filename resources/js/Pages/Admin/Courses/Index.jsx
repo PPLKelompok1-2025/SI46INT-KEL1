@@ -9,6 +9,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
@@ -84,18 +90,9 @@ export default function Index({ courses, categories, filters = {} }) {
             className: 'text-center',
             cellClassName: 'text-center',
             render: (course) => (
-                <div>
-                    <Badge
-                        variant={course.is_published ? 'success' : 'secondary'}
-                    >
-                        {course.is_published ? 'Published' : 'Draft'}
-                    </Badge>
-                    {course.is_free && (
-                        <Badge variant="outline" className="ml-2">
-                            Free
-                        </Badge>
-                    )}
-                </div>
+                <Badge variant={course.is_published ? 'primary' : 'secondary'}>
+                    {course.is_published ? 'Published' : 'Draft'}
+                </Badge>
             ),
         },
         {
@@ -103,7 +100,17 @@ export default function Index({ courses, categories, filters = {} }) {
             key: 'price',
             className: 'text-center',
             cellClassName: 'text-center',
-            render: (course) => formatCurrency(course.price),
+            render: (course) => (
+                <div>
+                    {course.is_free ? (
+                        <Badge variant="outline" className="ml-2">
+                            Free
+                        </Badge>
+                    ) : (
+                        formatCurrency(course.price)
+                    )}
+                </div>
+            ),
         },
         {
             label: 'Rating',
@@ -138,41 +145,63 @@ export default function Index({ courses, categories, filters = {} }) {
             cellClassName: 'text-right',
             render: (course) => (
                 <div className="flex justify-end space-x-2">
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('admin.courses.show', course.id)}>
-                            <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="icon" asChild>
-                        <Link href={route('admin.courses.edit', course.id)}>
-                            <Edit className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <Button
-                        variant={course.is_approved ? 'outline' : 'success'}
-                        size="icon"
-                        asChild
-                        title={course.is_approved ? 'Unapprove' : 'Approve'}
-                    >
-                        <Link
-                            href={route('admin.courses.approve', course.id)}
-                            method="patch"
-                        >
-                            {course.is_approved ? (
-                                <XCircle className="h-4 w-4" />
-                            ) : (
-                                <CheckCircle className="h-4 w-4" />
-                            )}
-                        </Link>
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => confirmDelete(course)}
-                        disabled={course.enrollments_count > 0}
-                    >
-                        <Trash className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.courses.show',
+                                            course.id,
+                                        )}
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View course details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" asChild>
+                                    <Link
+                                        href={route(
+                                            'admin.courses.edit',
+                                            course.id,
+                                        )}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Edit course details</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    onClick={() => confirmDelete(course)}
+                                    disabled={course.enrollments_count > 0}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete course</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             ),
         },
@@ -222,19 +251,19 @@ export default function Index({ courses, categories, filters = {} }) {
             {
                 title: 'Total Courses',
                 value: courses.total,
-                icon: <BookOpen className="h-4 w-4 text-muted-foreground" />,
+                icon: <BookOpen className="h-4 w-4 text-yellow-500" />,
             },
             {
                 title: 'Published',
                 value: courses.data.filter((course) => course.is_published)
                     .length,
-                icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
+                icon: <CheckCircle className="h-4 w-4 text-green-500" />,
             },
             {
                 title: 'Drafts',
                 value: courses.data.filter((course) => !course.is_published)
                     .length,
-                icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
+                icon: <XCircle className="h-4 w-4 text-blue-500" />,
             },
         ],
     };
