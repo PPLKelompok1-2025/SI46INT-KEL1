@@ -21,3 +21,11 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/.cursor
+# Laravel storage directories for encrypted videos
+/storage/app/encrypted_videos
+/storage/app/private
+/storage/app/temp
+
+# text files
+.*txt

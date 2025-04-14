@@ -1,176 +1,344 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
+import { Button } from '@/Components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import { Link, usePage } from '@inertiajs/react';
+import {
+    Award,
+    BarChart2,
+    BookDashed,
+    BookOpen,
+    CreditCard,
+    DollarSign,
+    FileText,
+    GraduationCap,
+    Heart,
+    LayoutDashboard,
+    LogOut,
+    Menu,
+    Search,
+    Settings,
+    Star,
+    Ticket,
+    Users,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 
-export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+export default function AuthenticatedLayout({ children }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    // Define navigation links based on user role
+    const getNavigationLinks = () => {
+        const role = user.role;
+
+        if (role === 'admin') {
+            return [
+                {
+                    name: 'Dashboard',
+                    href: '/admin/dashboard',
+                    icon: LayoutDashboard,
+                },
+                { name: 'Users', href: '/admin/users', icon: Users },
+                { name: 'Courses', href: '/admin/courses', icon: BookOpen },
+                {
+                    name: 'Transactions',
+                    href: '/admin/transactions',
+                    icon: CreditCard,
+                },
+                {
+                    name: 'Analytics',
+                    href: '/admin/analytics',
+                    icon: BarChart2,
+                },
+                {
+                    name: 'Reviews',
+                    href: '/admin/reviews',
+                    icon: Star,
+                },
+                {
+                    name: 'Categories',
+                    href: '/admin/categories',
+                    icon: BookDashed,
+                },
+                {
+                    name: 'Promo Codes',
+                    href: '/admin/promo-codes',
+                    icon: Ticket,
+                },
+                { name: 'Settings', href: '/admin/settings', icon: Settings },
+            ];
+        } else if (role === 'instructor') {
+            return [
+                {
+                    name: 'Dashboard',
+                    href: '/instructor/dashboard',
+                    icon: LayoutDashboard,
+                },
+                {
+                    name: 'My Courses',
+                    href: '/instructor/courses',
+                    icon: BookOpen,
+                },
+                {
+                    name: 'Students',
+                    href: '/instructor/students',
+                    icon: GraduationCap,
+                },
+                {
+                    name: 'Earnings',
+                    href: '/instructor/earnings',
+                    icon: DollarSign,
+                },
+                {
+                    name: 'Reviews',
+                    href: '/instructor/reviews',
+                    icon: Star,
+                },
+                {
+                    name: 'Settings',
+                    href: '/instructor/settings',
+                    icon: Settings,
+                },
+            ];
+        } else if (role === 'student') {
+            return [
+                {
+                    name: 'Dashboard',
+                    href: '/student/dashboard',
+                    icon: LayoutDashboard,
+                },
+                {
+                    name: 'My Learning',
+                    href: '/student/courses',
+                    icon: BookOpen,
+                },
+                { name: 'Wishlist', href: '/student/wishlist', icon: Heart },
+                {
+                    name: 'Certificates',
+                    href: '/student/certificates',
+                    icon: Award,
+                },
+                { name: 'Notes', href: '/student/notes', icon: FileText },
+                { name: 'Settings', href: '/student/settings', icon: Settings },
+            ];
+        } else {
+            // Default navigation for other roles or unauthenticated users
+            return [
+                {
+                    name: 'Dashboard',
+                    href: '/dashboard',
+                    icon: LayoutDashboard,
+                },
+                { name: 'Courses', href: '/courses', icon: BookOpen },
+            ];
+        }
+    };
+
+    const navigation = getNavigationLinks();
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav className="border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                                </Link>
-                            </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Dashboard
-                                </NavLink>
-                            </div>
-                        </div>
-
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
-                                            >
-                                                {user.name}
-
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+        <div className="min-h-screen bg-background">
+            {/* Mobile sidebar */}
+            <div
+                className={cn(
+                    'fixed inset-0 z-50 bg-background lg:hidden',
+                    sidebarOpen ? 'block' : 'hidden',
+                )}
+            >
+                <div className="flex h-full flex-col overflow-y-auto py-6 shadow-lg">
+                    <div className="px-4">
+                        <Link
+                            href="/"
+                            className="flex items-center"
+                            prefetch="hover"
                         >
-                            Dashboard
-                        </ResponsiveNavLink>
+                            <span className="text-xl font-bold">
+                                Coursepedia
+                            </span>
+                        </Link>
                     </div>
+                    <div className="mt-6 flex-1 px-4">
+                        <nav className="grid items-start gap-2">
+                            {navigation.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+                                        window.location.pathname === item.href
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-muted-foreground hover:bg-muted',
+                                    )}
+                                    prefetch="hover"
+                                >
+                                    <item.icon className="h-5 w-5" />
+                                    {item.name}
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+                    <div className="mt-6 px-4">
+                        <Link
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        >
+                            <LogOut className="h-5 w-5" />
+                            Log Out
+                        </Link>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        className="absolute right-4 top-4 h-8 w-8 p-0"
+                        onClick={() => setSidebarOpen(false)}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
 
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                {user.name}
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
+            {/* Desktop sidebar */}
+            <div className="hidden border-r lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-60 lg:flex-col">
+                <div className="flex h-full flex-col overflow-y-auto py-6">
+                    <div className="px-6">
+                        <Link
+                            href="/"
+                            className="flex items-center"
+                            prefetch="hover"
+                        >
+                            <span className="text-xl font-bold">
+                                Coursepedia
+                            </span>
+                        </Link>
+                    </div>
+                    <div className="mt-10 flex-1 px-6">
+                        <nav className="grid items-start gap-2">
+                            {navigation.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={cn(
+                                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+                                        window.location.pathname === item.href
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'text-muted-foreground hover:bg-muted',
+                                    )}
+                                    prefetch="hover"
+                                >
+                                    <item.icon className="h-5 w-5" />
+                                    {item.name}
+                                </Link>
+                            ))}
+                        </nav>
+                    </div>
+                    <div className="mt-6 px-6">
+                        <Link
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        >
+                            <LogOut className="h-5 w-5" />
+                            Log Out
+                        </Link>
                     </div>
                 </div>
-            </nav>
+            </div>
 
-            {header && (
-                <header className="bg-white shadow dark:bg-gray-800">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
+            {/* Main content */}
+            <div className="lg:pl-60">
+                {/* Top bar */}
+                <div className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-6 shadow-sm">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden"
+                        onClick={() => setSidebarOpen(true)}
+                    >
+                        <Menu className="h-6 w-6" />
+                    </Button>
+                    <div className="flex-1" />
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/search"
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                            <Search className="h-4 w-4" />
+                            <span className="hidden md:inline-block">
+                                Search
+                            </span>
+                        </Link>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="relative h-8 w-8 rounded-full"
+                                >
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage
+                                            src={
+                                                user.profile_photo_path
+                                                    ? `/storage/${user.profile_photo_path}`
+                                                    : null
+                                            }
+                                            className="object-cover"
+                                            alt={user.name}
+                                        />
+                                        <AvatarFallback>
+                                            {user.name.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>
+                                    My Account
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem disabled>
+                                    {user.name}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href={route('profile.edit')}
+                                        prefetch="hover"
+                                    >
+                                        Profile
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        className="w-full text-left"
+                                    >
+                                        Log Out
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
-                </header>
-            )}
+                </div>
 
-            <main>{children}</main>
+                {/* Main content */}
+                <main className="min-h-[calc(100vh-4rem)] p-6">{children}</main>
+            </div>
+
+            {/* Toast notifications */}
+            <Toaster position="bottom-right" />
         </div>
     );
 }
