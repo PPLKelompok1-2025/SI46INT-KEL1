@@ -70,6 +70,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Video streaming route for students
         Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
+
+        // Wishlist routes
+        Route::get('/wishlist', [StudentCourseController::class, 'wishlist'])->name('wishlist');
+        Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'toggleWishlist'])->name('courses.wishlist.toggle');
     });
 
     // Admin routes
