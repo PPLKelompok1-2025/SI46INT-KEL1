@@ -1,32 +1,49 @@
 <?php
 
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CourseController;
-use App\Http\Controllers\EnrollmentController;
-use App\Http\Controllers\LessonProgressController;
+use App\Http\Controllers\Instructor\AssignmentController as InstructorAssignmentController;
+use App\Http\Controllers\Instructor\CourseController as InstructorCourseController;
+use App\Http\Controllers\Instructor\DashboardController as InstructorDashboardController;
+use App\Http\Controllers\Instructor\EarningController;
+use App\Http\Controllers\Instructor\LessonController;
+use App\Http\Controllers\Instructor\QuizController as InstructorQuizController;
+use App\Http\Controllers\Instructor\QuestionController;
+use App\Http\Controllers\Instructor\StudentController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\TransactionController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
+use App\Http\Controllers\Student\CertificateController;
+use App\Http\Controllers\Student\CourseController as StudentCourseController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\NoteController as StudentNoteController;
+use App\Http\Controllers\Student\QuizController as StudentQuizController;
+use App\Http\Controllers\Instructor\ReviewController as InstructorReviewController;
+use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
+use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [LandingController::class, 'index'])->name('home');
+Route::get('/quick-search', [LandingController::class, 'search'])->name('quick-search');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-// Public course routes
+// Public routes
 Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
+
+// Categories routes
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 // Authenticated user routes
 Route::middleware(['auth'])->group(function () {
