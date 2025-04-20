@@ -104,13 +104,17 @@ Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.'
 
 // Admin routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::get('/courses', [AdminController::class, 'courses'])->name('admin.courses');
-    Route::put('/courses/{course}/toggle-featured', [AdminController::class, 'toggleFeatured'])->name('admin.courses.toggle-featured');
-    Route::get('/transactions', [AdminController::class, 'transactions'])->name('admin.transactions');
-    Route::get('/reviews', [AdminController::class, 'reviews'])->name('admin.reviews');
-    Route::put('/reviews/{review}/approve', [AdminController::class, 'approveReview'])->name('admin.reviews.approve');
+    // Reviews management
+    Route::get('/reviews', [App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('/reviews/reported', [App\Http\Controllers\Admin\ReviewController::class, 'reported'])->name('reviews.reported');
+    Route::get('/reviews/course/{course}', [App\Http\Controllers\Admin\ReviewController::class, 'course'])->name('reviews.course');
+    Route::get('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('reviews.show');
+    Route::get('/reviews/{review}/edit', [App\Http\Controllers\Admin\ReviewController::class, 'edit'])->name('reviews.edit');
+    Route::put('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+    Route::patch('/reviews/{review}/approve', [App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
+    Route::patch('/reviews/{review}/approve-reported', [App\Http\Controllers\Admin\ReviewController::class, 'approveReported'])->name('reviews.approve-reported');
+    Route::post('/reviews/{review}/respond', [App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     // Profile routes
