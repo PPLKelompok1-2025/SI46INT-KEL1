@@ -86,6 +86,22 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
+// Instructor routes
+Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
+    // Lesson routes - nested under courses
+    Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
+    Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
+    Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
+    Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
+    Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
+    Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
+
+    // Video handling routes
+    Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');
+    Route::post('lessons/videos/delete', [LessonController::class, 'deleteTemporaryVideo'])->name('lessons.videos.delete');
+    Route::get('lessons/{lesson}/video', [LessonController::class, 'streamVideo'])->name('lessons.videos.stream');
+});
+
 // Admin routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
