@@ -72,6 +72,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
     });
 
+    // Admin routes
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Course management
+        Route::resource('courses', AdminCourseController::class);
+        Route::patch('/courses/{course}/approve', [AdminCourseController::class, 'approve'])->name('courses.approve');
+        Route::patch('/courses/{course}/feature', [AdminCourseController::class, 'feature'])->name('courses.feature');
+    });
+
     // Student enrollment routes
     Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
     Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'store'])->name('enrollments.store');
