@@ -45,22 +45,6 @@ Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('c
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
-// Instructor routes
-Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
-    // Lesson routes - nested under courses
-    Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
-    Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
-    Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
-    Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
-    Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
-    Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
-
-    // Video handling routes
-    Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');
-    Route::post('lessons/videos/delete', [LessonController::class, 'deleteTemporaryVideo'])->name('lessons.videos.delete');
-    Route::get('lessons/{lesson}/video', [LessonController::class, 'streamVideo'])->name('lessons.videos.stream');
-});
-
 Route::middleware(['auth', 'verified'])->group(function () {
     // Common authenticated routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -68,14 +52,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
 
-    // Instructor routes
-    Route::middleware('can:create,App\\Models\\Course')->prefix('instructor')->name('instructor.')->group(function () {
-        Route::get('/courses', [CourseController::class, 'myCourses'])->name('courses.index');
-        Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
-        Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
-        Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-        Route::put('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
-        Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+    // Student routes
+    Route::middleware(['role:student'])->prefix('student')->name('student.')->group(function () {
+        Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
+
+        // Course enrollment and learning
+        Route::get('/courses', [StudentCourseController::class, 'index'])->name('courses.index');
+        Route::get('/courses/{course:slug}', [StudentCourseController::class, 'show'])->name('courses.show');
+        Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'enroll'])->name('courses.enroll');
+        Route::get('/courses/{course}/learn', [StudentCourseController::class, 'learn'])->name('courses.learn');
+        Route::get('/courses/{course}/lessons/{lesson}', [StudentCourseController::class, 'lesson'])->name('courses.lessons.show');
+        Route::post('/courses/{course}/complete', [EnrollmentController::class, 'complete'])->name('courses.complete');
+        Route::post('/lessons/{lesson}/complete', [EnrollmentController::class, 'completeLesson'])->name('lessons.complete');
+        Route::post('/courses/{course}/review', [StudentCourseController::class, 'review'])->name('courses.review');
+        Route::put('/courses/{course}/review/{review}', [StudentCourseController::class, 'updateReview'])->name('courses.review.update');
+        Route::delete('/courses/{course}/review/{review}', [StudentCourseController::class, 'deleteReview'])->name('courses.review.delete');
+
+        // Video streaming route for students
+        Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
     });
 
     // Student enrollment routes
