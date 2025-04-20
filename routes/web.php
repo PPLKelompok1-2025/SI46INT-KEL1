@@ -83,19 +83,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'store'])->name('enrollments.store');
     Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
     Route::patch('/enrollments/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollments.update');
-
     // Transaction routes
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/courses/{course}/checkout', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('/courses/{course}/checkout', [TransactionController::class, 'store'])->name('transactions.store');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
 });
-
-// Midtrans payment notification webhook (no auth required)
-Route::post('/payment/notification', [TransactionController::class, 'notification'])->name('transactions.notification');
-
-require __DIR__.'/auth.php';
-require __DIR__.'/admin.php';
-require __DIR__.'/discussion.php';
-require __DIR__.'/certificate.php';
-require __DIR__.'/wishlist.php';
