@@ -76,6 +76,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'toggleWishlist'])->name('courses.wishlist.toggle');
     });
 
+    // Instructor routes
+    Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
+        Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
+
+        // Course management
+        Route::resource('courses', InstructorCourseController::class);
+        Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+    });
+
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
