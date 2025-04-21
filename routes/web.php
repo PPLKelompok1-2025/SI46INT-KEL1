@@ -83,6 +83,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Course management
         Route::resource('courses', InstructorCourseController::class);
         Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+
+        // Earnings routes
+        Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
+        Route::get('/earnings/withdraw', [EarningController::class, 'withdrawForm'])->name('earnings.withdraw');
+        Route::post('/earnings/withdraw', [EarningController::class, 'requestWithdrawal'])->name('earnings.request-withdrawal');
+        Route::get('/earnings/courses/{course}', [EarningController::class, 'courseEarnings'])->name('earnings.course');
     });
 
     // Admin routes
