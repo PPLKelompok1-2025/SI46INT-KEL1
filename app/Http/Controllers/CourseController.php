@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 class CourseController extends Controller
 {
-/**
+    /**
      * Display a paginated listing of published courses.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -81,7 +81,7 @@ class CourseController extends Controller
                 $course->is_enrolled = $course->enrollments()
                     ->where('user_id', $request->user()->id)
                     ->exists();
-
+                
                 $course->is_wishlisted = $request->user()
                     ->wishlistedCourses()
                     ->where('course_id', $course->id)
@@ -170,6 +170,7 @@ class CourseController extends Controller
             'activeTab' => $activeTab,
         ]);
     }
+
         /**
      * Show the checkout page for a course
      *
