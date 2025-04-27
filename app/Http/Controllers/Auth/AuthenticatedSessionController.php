@@ -33,13 +33,19 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if (Auth::user()->isAdmin()) {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        } else if (Auth::user()->isInstructor()) {
+            return redirect()->intended(route('instructor.dashboard', absolute: false));
+        }
+
+        return redirect()->intended(route('student.dashboard', absolute: false));
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
 
@@ -47,6 +53,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        if ($request->boolean('withRedirect')) {
+            return redirect()->route('login');
+        }
     }
 }
