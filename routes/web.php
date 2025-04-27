@@ -95,10 +95,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        // Analytics routes
+        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+        // User management
+        Route::resource('users', UserController::class);
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+
         // Course management
         Route::resource('courses', AdminCourseController::class);
         Route::patch('/courses/{course}/approve', [AdminCourseController::class, 'approve'])->name('courses.approve');
         Route::patch('/courses/{course}/feature', [AdminCourseController::class, 'feature'])->name('courses.feature');
+
+        // Transaction management
+        Route::get('/transactions/export', [AdminTransactionController::class, 'export'])->name('transactions.export');
+        Route::resource('transactions', AdminTransactionController::class)->only(['index', 'show']);
+        Route::post('/transactions/{transaction}/refund', [AdminTransactionController::class, 'refund'])->name('transactions.refund');
     });
 
     // Student enrollment routes
