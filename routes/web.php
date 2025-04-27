@@ -76,6 +76,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'toggleWishlist'])->name('courses.wishlist.toggle');
     });
 
+    // Instructor routes
+    Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
+        Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
+
+        // Course management
+        Route::resource('courses', InstructorCourseController::class);
+        Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+
+        // Earnings routes
+        Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
+        Route::get('/earnings/withdraw', [EarningController::class, 'withdrawForm'])->name('earnings.withdraw');
+        Route::post('/earnings/withdraw', [EarningController::class, 'requestWithdrawal'])->name('earnings.request-withdrawal');
+        Route::get('/earnings/courses/{course}', [EarningController::class, 'courseEarnings'])->name('earnings.course');
+    });
+
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
