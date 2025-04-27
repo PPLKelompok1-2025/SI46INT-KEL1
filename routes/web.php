@@ -95,6 +95,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        // User management
+        Route::resource('users', UserController::class);
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+
         // Course management
         Route::resource('courses', AdminCourseController::class);
         Route::patch('/courses/{course}/approve', [AdminCourseController::class, 'approve'])->name('courses.approve');
