@@ -141,9 +141,15 @@ class CourseController extends Controller
         $perPage = 5;
 
         $reviewsQuery = $course->reviews()
-            ->where('is_approved', true)
+            ->where(function ($query) use ($user) {
+                $query->where('is_approved', true)
+                      ->orWhere(function ($q) use ($user) {
+                          $q->where('user_id', $user->id)
+                            ->where('is_approved', false);
+                      });
+            })
             ->with('user:id,name,profile_photo_path')
-            ->select('id', 'course_id', 'user_id', 'rating', 'comment', 'created_at')
+            ->select('id', 'course_id', 'user_id', 'rating', 'comment', 'created_at', 'is_approved')
             ->orderByDesc('created_at');
 
         $reviews = $reviewsQuery->paginate($perPage);

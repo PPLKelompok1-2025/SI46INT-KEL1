@@ -546,7 +546,7 @@ export default function Show({
                                         {reviews.map((review) => (
                                             <div
                                                 key={review.id}
-                                                className="rounded-lg border p-4"
+                                                className={`rounded-lg border p-4 ${!review.is_approved ? 'border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20' : ''}`}
                                             >
                                                 <div className="mb-2 flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
@@ -556,18 +556,23 @@ export default function Show({
                                                         <span className="font-medium">
                                                             {review.user?.name}
                                                         </span>
-                                                        <Button
-                                                            variant="outline"
-                                                            className="ml-2"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                setIsReviewDialogOpen(
-                                                                    true,
-                                                                );
-                                                            }}
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
+                                                        {review.user_id ===
+                                                            course
+                                                                .signed_in_user_review
+                                                                ?.user_id && (
+                                                            <Button
+                                                                variant="outline"
+                                                                className="ml-2"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setIsReviewDialogOpen(
+                                                                        true,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center">
                                                         {[...Array(5)].map(
@@ -588,10 +593,24 @@ export default function Show({
                                                 <p className="text-sm text-muted-foreground">
                                                     {review.comment}
                                                 </p>
-                                                <p className="mt-2 text-xs text-gray-500">
-                                                    {new Date(
-                                                        review.created_at,
-                                                    ).toLocaleDateString()}
+                                                <p className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                                                    <span>
+                                                        {new Date(
+                                                            review.created_at,
+                                                        ).toLocaleDateString()}
+                                                    </span>
+                                                    {!review.is_approved &&
+                                                        review.user_id ===
+                                                            course
+                                                                .signed_in_user_review
+                                                                ?.user_id && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400"
+                                                            >
+                                                                Pending approval
+                                                            </Badge>
+                                                        )}
                                                 </p>
                                             </div>
                                         ))}
