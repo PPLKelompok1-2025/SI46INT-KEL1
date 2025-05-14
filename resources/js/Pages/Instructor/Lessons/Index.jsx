@@ -246,14 +246,14 @@ export default function Index({ course, lessons }) {
                                                         ? 'Published'
                                                         : 'Draft'}
                                                 </Badge>
-                                                {lesson.is_free && (
+                                                {lesson.is_free ? (
                                                     <Badge
                                                         variant="outline"
                                                         className="ml-2"
                                                     >
                                                         Free
                                                     </Badge>
-                                                )}
+                                                ) : null}
                                             </TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
