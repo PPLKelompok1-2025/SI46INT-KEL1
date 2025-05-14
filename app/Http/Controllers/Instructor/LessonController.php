@@ -161,13 +161,12 @@ class LessonController extends Controller
      * Update the specified lesson in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Lesson $lesson)
+    public function update(Request $request, Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to update this lesson');
