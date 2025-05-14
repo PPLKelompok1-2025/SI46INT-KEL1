@@ -11,7 +11,7 @@ import {
 } from '@/Components/ui/card';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, WhenVisible } from '@inertiajs/react';
-import { BookOpen, Trash2 } from 'lucide-react';
+import { BookOpen, Heart } from 'lucide-react';
 
 export default function Wishlist({
     courses,
@@ -70,14 +70,14 @@ export default function Wishlist({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="text-destructive hover:bg-destructive/10"
+                                                className="hover:bg-red-50"
                                                 onClick={() =>
                                                     handleRemoveFromWishlist(
                                                         course.id,
                                                     )
                                                 }
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Heart className="h-4 w-4 fill-current text-red-500" />
                                             </Button>
                                         </div>
                                         <CardTitle className="line-clamp-2">
