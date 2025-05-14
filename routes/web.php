@@ -148,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
         Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
         Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
+        Route::put('courses/{course}/lessons/{lesson}', [LessonController::class, 'update'])->name('courses.lessons.update');
         Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
         Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
         Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');

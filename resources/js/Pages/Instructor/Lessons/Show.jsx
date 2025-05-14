@@ -191,13 +191,13 @@ export default function Show({ lesson, course }) {
                                 </span>
                             </div>
                             <Button variant="outline" size="sm" asChild>
-                                <Link
+                                <a
                                     href={lesson.video_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
                                     Open Video
-                                </Link>
+                                </a>
                             </Button>
                         </div>
                     </CardContent>
