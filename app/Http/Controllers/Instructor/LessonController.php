@@ -120,13 +120,12 @@ class LessonController extends Controller
     /**
      * Display the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function show(Lesson $lesson)
+    public function show(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to view this lesson');
@@ -141,13 +140,12 @@ class LessonController extends Controller
     /**
      * Show the form for editing the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function edit(Lesson $lesson)
+    public function edit(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to edit this lesson');
@@ -223,13 +221,12 @@ class LessonController extends Controller
     /**
      * Remove the specified lesson from storage.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Lesson $lesson)
+    public function destroy(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to delete this lesson');
