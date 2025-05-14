@@ -264,21 +264,27 @@ export default function Welcome({
                             </div>
                         </div>
                         <div className="flex space-x-4">
-                            {user &&
-                            (user.role === 'instructor' ||
-                                user.role === 'admin') ? (
-                                <Button asChild>
-                                    <Link
-                                        href={
-                                            auth.user.role === 'instructor'
-                                                ? route('instructor.dashboard')
-                                                : route('admin.dashboard')
-                                        }
-                                        prefetch="hover"
-                                    >
-                                        Dashboard
-                                    </Link>
-                                </Button>
+                            {user ? (
+                                <>
+                                    <Button asChild>
+                                        <Link
+                                            href={
+                                                auth.user.role === 'instructor'
+                                                    ? route(
+                                                          'instructor.dashboard',
+                                                      )
+                                                    : auth.user.role === 'admin'
+                                                      ? route('admin.dashboard')
+                                                      : route(
+                                                            'student.dashboard',
+                                                        )
+                                            }
+                                            prefetch="hover"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    </Button>
+                                </>
                             ) : (
                                 <>
                                     <Button variant="outline" asChild>
@@ -326,14 +332,16 @@ export default function Welcome({
                                         Explore Courses
                                     </Link>
                                 </Button>
-                                <Button size="lg" variant="outline" asChild>
-                                    <Link
-                                        href={route('register')}
-                                        prefetch="hover"
-                                    >
-                                        Join For Free
-                                    </Link>
-                                </Button>
+                                {!user && (
+                                    <Button size="lg" variant="outline" asChild>
+                                        <Link
+                                            href={route('register')}
+                                            prefetch="hover"
+                                        >
+                                            Join For Free
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </div>
                         <div className="mt-8 md:mt-0 md:w-1/2">
