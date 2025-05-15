@@ -19,7 +19,7 @@ import {
     Layers,
     Search,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function Index({
     parentCategories,
@@ -31,39 +31,47 @@ export default function Index({
     isAllNextPageExists,
 }) {
     const [showFilters, setShowFilters] = useState(false);
+    const [searchInputValue, setSearchInputValue] = useState(
+        filters?.search || '',
+    );
 
     const { data, setData } = useForm({
         search: filters?.search || '',
         sort: filters?.sort || 'name_asc',
     });
 
-    const debouncedSearch = debounce((value) => {
-        setData('search', value);
-        applyFilters();
-    }, 500);
+    const debouncedSearch = useCallback(
+        debounce((value) => {
+            setData('search', value);
+            router.get(
+                route('categories.index'),
+                {
+                    search: value,
+                    sort: data.sort,
+                    page: 1,
+                    allPage: 1,
+                },
+                {
+                    preserveState: false,
+                    preserveScroll: true,
+                    only: [],
+                },
+            );
+        }, 500),
+        [data.sort],
+    );
+
+    useEffect(() => {
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [debouncedSearch]);
 
     const handleSearchChange = (e) => {
         const value = e.target.value;
-        setData('search', value);
+        setSearchInputValue(value);
         debouncedSearch(value);
     };
-
-    const applyFilters = useCallback(() => {
-        router.get(
-            route('categories.index'),
-            {
-                search: data.search,
-                sort: data.sort,
-                page: 1,
-                allPage: 1,
-            },
-            {
-                preserveState: false,
-                preserveScroll: true,
-                only: [],
-            },
-        );
-    }, [data.search, data.sort]);
 
     const handleFilterChange = (field, value) => {
         setData((prevData) => ({
@@ -88,6 +96,7 @@ export default function Index({
     };
 
     const resetFilters = () => {
+        setSearchInputValue('');
         router.get(route('categories.index'), {}, { preserveState: false });
     };
 
@@ -107,7 +116,7 @@ export default function Index({
                 <div className="relative flex-1">
                     <Input
                         placeholder="Search categories..."
-                        value={data.search}
+                        value={searchInputValue}
                         onChange={handleSearchChange}
                         className="pl-10"
                     />
