@@ -12,18 +12,17 @@ import {
 } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
-export default function Create({ course, nextOrder }) {
+export default function Create({ course, nextOrder, activeTab = 'basic' }) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         slug: '',
         description: '',
         content: '',
         video_url: '',
-        temp_video: '', // For temporary uploaded video path
+        temp_video: '',
         duration: '',
         order: nextOrder,
         is_free: false,
@@ -31,39 +30,22 @@ export default function Create({ course, nextOrder }) {
         section: '',
     });
 
-    const [activeTab, setActiveTab] = useState('basic');
-
-    useEffect(() => {
-        return () => {
-            if (data.temp_video) {
-                deleteTempVideo(data.temp_video);
-            }
-        };
-    }, []);
+    const handleTabChange = (value) => {
+        router.get(
+            route('instructor.courses.lessons.create', course.id),
+            { activeTab: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['activeTab'],
+                replace: true,
+            },
+        );
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post(route('instructor.courses.lessons.store', course.id));
-    };
-
-    const deleteTempVideo = (path) => {
-        if (!path) return;
-
-        fetch(route('instructor.lessons.videos.delete'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector(
-                    'meta[name="csrf-token"]',
-                ).content,
-            },
-            body: JSON.stringify({ path }),
-        }).then((response) => {
-            if (response.ok) {
-                setData('temp_video', '');
-                setUploadProgress(0);
-            }
-        });
     };
 
     return (
@@ -91,7 +73,7 @@ export default function Create({ course, nextOrder }) {
                 <form onSubmit={handleSubmit}>
                     <Tabs
                         value={activeTab}
-                        onValueChange={setActiveTab}
+                        onValueChange={handleTabChange}
                         className="space-y-4"
                     >
                         <TabsList className="grid w-full grid-cols-3">
@@ -124,7 +106,9 @@ export default function Create({ course, nextOrder }) {
                                     <Button
                                         variant="outline"
                                         type="button"
-                                        onClick={() => setActiveTab('content')}
+                                        onClick={() =>
+                                            handleTabChange('content')
+                                        }
                                     >
                                         Next: Lesson Content
                                     </Button>
@@ -151,14 +135,16 @@ export default function Create({ course, nextOrder }) {
                                     <Button
                                         variant="outline"
                                         type="button"
-                                        onClick={() => setActiveTab('basic')}
+                                        onClick={() => handleTabChange('basic')}
                                     >
                                         Previous: Basic Information
                                     </Button>
                                     <Button
                                         variant="outline"
                                         type="button"
-                                        onClick={() => setActiveTab('settings')}
+                                        onClick={() =>
+                                            handleTabChange('settings')
+                                        }
                                     >
                                         Next: Settings
                                     </Button>
@@ -186,7 +172,9 @@ export default function Create({ course, nextOrder }) {
                                     <Button
                                         variant="outline"
                                         type="button"
-                                        onClick={() => setActiveTab('content')}
+                                        onClick={() =>
+                                            handleTabChange('content')
+                                        }
                                     >
                                         Previous: Lesson Content
                                     </Button>

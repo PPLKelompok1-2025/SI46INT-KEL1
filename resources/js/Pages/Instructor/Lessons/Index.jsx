@@ -32,12 +32,16 @@ import {
     Trash,
     Video,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 export default function Index({ course, lessons }) {
     const [reordering, setReordering] = useState(false);
     const [orderedLessons, setOrderedLessons] = useState([...lessons]);
+
+    useEffect(() => {
+        setOrderedLessons([...lessons]);
+    }, [lessons]);
 
     const handleDelete = (lesson) => {
         if (confirm('Are you sure you want to delete this lesson?')) {
@@ -46,20 +50,16 @@ export default function Index({ course, lessons }) {
                     course.id,
                     lesson.id,
                 ]),
+                {},
                 {
                     onSuccess: () => {
-                        toast({
-                            title: 'Lesson deleted',
-                            description:
-                                'The lesson has been deleted successfully.',
-                        });
+                        setOrderedLessons((current) =>
+                            current.filter((l) => l.id !== lesson.id),
+                        );
+                        toast.success('Lesson deleted successfully');
                     },
                     onError: (error) => {
-                        toast({
-                            title: 'Error',
-                            description: error.message,
-                            variant: 'destructive',
-                        });
+                        toast.error(`Error deleting lesson: ${error.message}`);
                     },
                 },
             );
@@ -78,11 +78,7 @@ export default function Index({ course, lessons }) {
                 },
                 {
                     onSuccess: () => {
-                        toast({
-                            title: 'Lessons reordered',
-                            description:
-                                'The lesson order has been updated successfully.',
-                        });
+                        toast.success('Lessons reordered successfully');
                         setReordering(false);
                     },
                 },
