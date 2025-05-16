@@ -32,18 +32,15 @@ import {
     Trash,
     Video,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 export default function Index({ course, lessons }) {
     const [reordering, setReordering] = useState(false);
     const [orderedLessons, setOrderedLessons] = useState([...lessons]);
-    const [initialLessons, setInitialLessons] = useState([...lessons]);
-    const [highlightedIds, setHighlightedIds] = useState([]);
 
     useEffect(() => {
         setOrderedLessons([...lessons]);
-        setInitialLessons([...lessons]);
     }, [lessons]);
 
     const handleDelete = (lesson) => {
@@ -53,20 +50,16 @@ export default function Index({ course, lessons }) {
                     course.id,
                     lesson.id,
                 ]),
+                {},
                 {
                     onSuccess: () => {
-                        toast({
-                            title: 'Lesson deleted',
-                            description:
-                                'The lesson has been deleted successfully.',
-                        });
+                        setOrderedLessons((current) =>
+                            current.filter((l) => l.id !== lesson.id),
+                        );
+                        toast.success('Lesson deleted successfully');
                     },
                     onError: (error) => {
-                        toast({
-                            title: 'Error',
-                            description: error.message,
-                            variant: 'destructive',
-                        });
+                        toast.error(`Error deleting lesson: ${error.message}`);
                     },
                 },
             );
@@ -85,17 +78,6 @@ export default function Index({ course, lessons }) {
                 },
                 {
                     onSuccess: () => {
-                        const moved = orderedLessons
-                            .filter((l, idx) => {
-                                const origIdx = initialLessons.findIndex(
-                                    (il) => il.id === l.id,
-                                );
-                                return origIdx !== idx;
-                            })
-                            .map((l) => l.id);
-                        setHighlightedIds(moved);
-                        setTimeout(() => setHighlightedIds([]), 2000);
-                        setInitialLessons([...orderedLessons]);
                         toast.success('Lessons reordered successfully');
                         setReordering(false);
                     },

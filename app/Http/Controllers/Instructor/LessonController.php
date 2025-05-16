@@ -46,7 +46,7 @@ class LessonController extends Controller
      * @param  \App\Models\Course  $course
      * @return \Inertia\Response
      */
-    public function create(Course $course)
+    public function create(Request $request, Course $course)
     {
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
@@ -57,7 +57,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Create', [
             'course' => $course,
-            'nextOrder' => $maxOrder + 1
+            'nextOrder' => $maxOrder + 1,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -144,7 +145,7 @@ class LessonController extends Controller
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function edit(Course $course, Lesson $lesson)
+    public function edit(Request $request, Course $course, Lesson $lesson)
     {
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
@@ -153,7 +154,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Edit', [
             'lesson' => $lesson,
-            'course' => $course
+            'course' => $course,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
