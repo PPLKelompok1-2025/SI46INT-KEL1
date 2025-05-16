@@ -55,6 +55,29 @@ class MidtransController extends Controller
 
         $orderId = 'ORDER-' . time() . '-' . $user->id . '-' . Str::random(5);
 
+        // Get the final amount from request (with discount applied) or use course price
+        $finalAmount = $request->input('finalAmount', $course->price);
+        $promoCode = $request->input('promoCode');
+
+        // Validate promo code if provided
+        $promoDetails = null;
+        if ($promoCode) {
+            $promo = PromoCodes::where('code', $promoCode)
+                ->where(function($query) {
+                    $query->whereNull('end_date')
+                        ->orWhere('end_date', '>=', now());
+                })
+                ->first();
+
+            if ($promo) {
+                $promoDetails = [
+                    'code' => $promo->code,
+                    'discount_type' => $promo->discount_type,
+                    'discount_value' => $promo->discount_value
+                ];
+            }
+        }
+
         try {
             \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
             \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
@@ -68,7 +91,7 @@ class MidtransController extends Controller
                 ];
             }
 
-            if ($course->price === 0) {
+            if ($course->price === 0 || $finalAmount === 0) {
                 Enrollment::create([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
@@ -86,7 +109,7 @@ class MidtransController extends Controller
                     'payment_method' => 'free',
                     'status' => 'completed',
                     'currency' => 'IDR',
-                    'payment_details' => json_encode(['method' => 'free_course']),
+                    'payment_details' => json_encode(['method' => 'free_course', 'promo_code' => $promoCode]),
                     'type' => 'purchase',
                 ]);
 
@@ -99,13 +122,13 @@ class MidtransController extends Controller
 
             $transaction_details = [
                 'order_id' => $orderId,
-                'gross_amount' => (int) $course->price,
+                'gross_amount' => (int) $finalAmount,
             ];
 
             $item_details = [
                 [
                     'id' => $course->id,
-                    'price' => (int) $course->price,
+                    'price' => (int) $finalAmount,
                     'quantity' => 1,
                     'name' => Str::limit($course->title, 40),
                     'category' => $course->category->name ?? 'Course',
@@ -131,10 +154,16 @@ class MidtransController extends Controller
                 'course_id' => $course->id,
                 'order_id' => $orderId,
                 'transaction_id' => 'TRX-' . time() . '-' . $user->id . '-' . Str::random(5),
-                'amount' => $course->price,
+                'amount' => $finalAmount,
                 'payment_method' => 'midtrans',
                 'status' => 'pending',
                 'currency' => 'IDR',
+                'payment_details' => json_encode([
+                    'promo_code' => $promoCode,
+                    'promo_details' => $promoDetails,
+                    'original_price' => $course->price,
+                    'discounted_price' => $finalAmount
+                ]),
                 'type' => 'purchase',
             ]);
 
@@ -287,6 +316,9 @@ class MidtransController extends Controller
         $statusChanged = false;
         $oldStatus = $transaction->status;
 
+        // Preserve existing payment details
+        $existingDetails = json_decode($transaction->payment_details ?? '{}', true);
+
         switch ($transactionStatus) {
             case 'capture':
                 if ($paymentType == 'credit_card') {
@@ -346,13 +378,13 @@ class MidtransController extends Controller
 
         $statusChanged = $oldStatus !== $transaction->status;
 
-        $transaction->payment_details = json_encode([
+        $transaction->payment_details = json_encode(array_merge($existingDetails, [
             'status' => $transactionStatus,
             'fraud_status' => $fraudStatus,
             'payment_type' => $paymentType,
             'updated_at' => now()->toIso8601String(),
             'raw_response' => $request->all(),
-        ]);
+        ]));
 
         $transaction->save();
 
@@ -430,6 +462,9 @@ class MidtransController extends Controller
 
             $oldStatus = $transaction->status;
 
+            // Preserve existing payment details
+            $existingDetails = json_decode($transaction->payment_details ?? '{}', true);
+
             switch ($transactionStatus) {
                 case 'capture':
                     if ($fraudStatus == 'challenge') {
@@ -466,14 +501,14 @@ class MidtransController extends Controller
                     break;
             }
 
-            $transaction->payment_details = json_encode([
+            $transaction->payment_details = json_encode(array_merge($existingDetails, [
                 'status' => $transactionStatus,
                 'fraud_status' => $fraudStatus,
                 'payment_type' => $paymentType,
                 'time' => $notification->transaction_time ?? now(),
                 'updated_at' => now()->toIso8601String(),
                 'raw_response' => $request->all(),
-            ]);
+            ]));
 
             $transaction->save();
 

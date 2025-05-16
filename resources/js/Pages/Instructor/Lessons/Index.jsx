@@ -38,9 +38,12 @@ import { toast } from 'react-hot-toast';
 export default function Index({ course, lessons }) {
     const [reordering, setReordering] = useState(false);
     const [orderedLessons, setOrderedLessons] = useState([...lessons]);
+    const [initialLessons, setInitialLessons] = useState([...lessons]);
+    const [highlightedIds, setHighlightedIds] = useState([]);
 
     useEffect(() => {
         setOrderedLessons([...lessons]);
+        setInitialLessons([...lessons]);
     }, [lessons]);
 
     const handleDelete = (lesson) => {
@@ -78,6 +81,17 @@ export default function Index({ course, lessons }) {
                 },
                 {
                     onSuccess: () => {
+                        const moved = orderedLessons
+                            .filter((l, idx) => {
+                                const origIdx = initialLessons.findIndex(
+                                    (il) => il.id === l.id,
+                                );
+                                return origIdx !== idx;
+                            })
+                            .map((l) => l.id);
+                        setHighlightedIds(moved);
+                        setTimeout(() => setHighlightedIds([]), 2000);
+                        setInitialLessons([...orderedLessons]);
                         toast.success('Lessons reordered successfully');
                         setReordering(false);
                     },
@@ -168,7 +182,16 @@ export default function Index({ course, lessons }) {
                                 </TableHeader>
                                 <TableBody>
                                     {orderedLessons.map((lesson, index) => (
-                                        <TableRow key={lesson.id}>
+                                        <TableRow
+                                            key={lesson.id}
+                                            className={
+                                                highlightedIds.includes(
+                                                    lesson.id,
+                                                )
+                                                    ? 'bg-yellow-100 transition-colors duration-1000'
+                                                    : ''
+                                            }
+                                        >
                                             {reordering && (
                                                 <TableCell>
                                                     <div className="flex items-center space-x-2">
