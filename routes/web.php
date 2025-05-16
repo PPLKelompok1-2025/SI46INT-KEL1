@@ -137,12 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
         Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
         Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
+        Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
 
-        // Routes for standalone lessons
-        // Route::get('lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
-        // Route::put('lessons/{lesson}', [LessonController::class, 'update'])->name('courses.lessons.update');
-        // Route::delete('lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
-        // Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
 
         // Video handling routes
         Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');

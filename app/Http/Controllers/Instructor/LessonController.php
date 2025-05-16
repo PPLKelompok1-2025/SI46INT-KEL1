@@ -273,7 +273,8 @@ class LessonController extends Controller
             }
         }
 
-        return response()->json(['success' => true]);
+        return redirect()->route('instructor.courses.lessons.index', $course->id)
+            ->with('success', 'Lessons reordered successfully');
     }
 
     /**
