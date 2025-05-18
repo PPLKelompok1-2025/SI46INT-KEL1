@@ -22,7 +22,6 @@ class TransactionController extends Controller
         $query = Transaction::query()
             ->with(['user', 'course']);
 
-        // Handle sorting with the single 'sort' parameter
         if ($request->has('sort') && $request->sort) {
             $sortField = 'created_at';
             $sortDirection = 'desc';
@@ -273,7 +272,6 @@ class TransactionController extends Controller
                 }
             });
 
-        // Handle sorting with the single 'sort' parameter
         if ($request->has('sort')) {
             $sortField = 'created_at';
             $sortDirection = 'desc';
