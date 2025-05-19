@@ -20,7 +20,7 @@ import {
     Trash2,
     Video,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export default function Show({ lesson, course }) {
     const videoPlayerRef = useRef(null);
@@ -45,24 +45,7 @@ export default function Show({ lesson, course }) {
         }
     };
 
-    useEffect(() => {
-        // Initialize video player if there's an encrypted video
-        if (lesson.video_path && videoPlayerRef.current) {
-            // Check if any HLS player script is already loaded
-            if (!window.Hls) {
-                // Load HLS.js script
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-                script.async = true;
-                script.onload = initializeVideoPlayer;
-                document.body.appendChild(script);
-            } else {
-                initializeVideoPlayer();
-            }
-        }
-    }, [lesson.video_path]);
-
-    const initializeVideoPlayer = () => {
+    const initializeVideoPlayer = useCallback(() => {
         const videoElement = videoPlayerRef.current;
         if (!videoElement) return;
 
@@ -116,7 +99,24 @@ export default function Show({ lesson, course }) {
         } else {
             console.error('HLS is not supported in this browser');
         }
-    };
+    }, [lesson.id]);
+
+    useEffect(() => {
+        // Initialize video player if there's an encrypted video
+        if (lesson.video_path && videoPlayerRef.current) {
+            // Check if any HLS player script is already loaded
+            if (!window.Hls) {
+                // Load HLS.js script
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                script.async = true;
+                script.onload = initializeVideoPlayer;
+                document.body.appendChild(script);
+            } else {
+                initializeVideoPlayer();
+            }
+        }
+    }, [lesson.video_path, initializeVideoPlayer]);
 
     return (
         <AuthenticatedLayout>

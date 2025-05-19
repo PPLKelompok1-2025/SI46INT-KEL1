@@ -33,6 +33,7 @@ use App\Http\Controllers\Instructor\ReviewController as InstructorReviewControll
 use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
 use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\VideoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -233,5 +234,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/notes/{note}', [StudentNoteController::class, 'destroy'])->name('notes.destroy');
     });
 });
+
+// Video serving routes
+Route::get('/video/playlist/{playlist}', [VideoController::class, 'servePlaylist'])->name('video.playlist');
+Route::get('/video/key/{key}', [VideoController::class, 'serveKey'])->name('video.key');
 
 require __DIR__.'/auth.php';
