@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
 use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\DonationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,6 +83,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/midtrans/token/{course}', [MidtransController::class, 'getSnapToken'])->name('midtrans.token');
         Route::post('/midtrans/notification', [MidtransController::class, 'handleNotification'])->name('midtrans.notification');
         Route::get('/midtrans/callback', [MidtransController::class, 'handleCallback'])->name('midtrans.callback');
+        Route::post('/donation/{course}', [DonationController::class, 'process'])->name('donation');
+
+        // Donation routes
+        Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
+        Route::post('/donation/{course}/process', [DonationController::class, 'process'])->name('donation.process');
+        Route::get('/donation/callback', [DonationController::class, 'handleCallback'])->name('donation.callback');
+        Route::post('/donation/notification', [DonationController::class, 'handleNotification'])->name('donation.notification');
     });
 
     // Admin routes
@@ -137,6 +145,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Course management
         Route::resource('courses', InstructorCourseController::class);
         Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+
+        // Donations management
+        Route::get('/courses/{course}/donations', [DonationController::class, 'courseIndex'])->name('courses.donations');
 
         // Reviews management
         Route::get('/reviews', [InstructorReviewController::class, 'index'])->name('reviews.index');
@@ -202,6 +213,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/courses/{course}/review', [StudentCourseController::class, 'review'])->name('courses.review');
         Route::put('/courses/{course}/review/{review}', [StudentCourseController::class, 'updateReview'])->name('courses.review.update');
         Route::delete('/courses/{course}/review/{review}', [StudentCourseController::class, 'deleteReview'])->name('courses.review.delete');
+
+        // Transaction routes
+        Route::get('/transactions', [App\Http\Controllers\Student\TransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{transaction}', [App\Http\Controllers\Student\TransactionController::class, 'show'])->name('transactions.show');
+        Route::get('/donations/{donation}', [App\Http\Controllers\Student\TransactionController::class, 'showDonation'])->name('donations.show');
 
         // Video streaming route for students
         Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
