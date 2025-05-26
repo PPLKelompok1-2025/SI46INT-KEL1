@@ -525,4 +525,147 @@ class MidtransController extends Controller
             return response('Error: ' . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * Process donation for a course.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Course  $course
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processDonation(Request $request, Course $course)
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+                'redirect' => route('login', ['redirect_to' => route('courses.show', $course->slug)])
+            ], 401);
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1000',
+        ]);
+
+        $user = Auth::user();
+        $amount = $request->input('amount');
+        $orderId = 'DONATION-' . time() . '-' . $user->id . '-' . Str::random(5);
+
+        try {
+            \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('services.midtrans.is_production', false);
+            \Midtrans\Config::$isSanitized = config('services.midtrans.is_sanitized', true);
+            \Midtrans\Config::$is3ds = config('services.midtrans.is_3ds', true);
+
+            if (!app()->environment('production')) {
+                \Midtrans\Config::$curlOptions = [
+                    CURLOPT_SSL_VERIFYHOST => 0,
+                    CURLOPT_SSL_VERIFYPEER => 0
+                ];
+            }
+
+            $transaction_details = [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $amount,
+            ];
+
+            $item_details = [
+                [
+                    'id' => 'donation-' . $course->id,
+                    'price' => (int) $amount,
+                    'quantity' => 1,
+                    'name' => 'Donation for: ' . Str::limit($course->title, 40),
+                    'category' => 'Donation',
+                    'url' => route('courses.show', $course->slug),
+                ]
+            ];
+
+            $customer_details = [
+                'first_name' => explode(' ', $user->name)[0],
+                'last_name' => count(explode(' ', $user->name)) > 1 ? explode(' ', $user->name)[1] : '',
+                'email' => $user->email,
+                'phone' => $user->phone ?? '',
+            ];
+
+            $params = [
+                'transaction_details' => $transaction_details,
+                'item_details' => $item_details,
+                'customer_details' => $customer_details,
+            ];
+
+            $transaction = Transaction::create([
+                'user_id' => $user->id,
+                'course_id' => $course->id,
+                'order_id' => $orderId,
+                'transaction_id' => 'DON-' . time() . '-' . $user->id . '-' . Str::random(5),
+                'amount' => $amount,
+                'payment_method' => 'midtrans',
+                'status' => 'pending',
+                'currency' => 'IDR',
+                'payment_details' => json_encode(['type' => 'donation']),
+                'type' => 'donation',
+            ]);
+
+            try {
+                try {
+                    $snapToken = \Midtrans\Snap::getSnapToken($params);
+
+                    return response()->json([
+                        'success' => true,
+                        'snap_token' => $snapToken,
+                        'order_id' => $orderId,
+                    ]);
+                } catch (\Exception $snapError) {
+                    if (strpos($snapError->getMessage(), 'Undefined array key 10023') !== false) {
+                        $snapToken = $this->getSnapTokenManually($params);
+
+                        if ($snapToken) {
+                            return response()->json([
+                                'success' => true,
+                                'snap_token' => $snapToken,
+                                'order_id' => $orderId,
+                            ]);
+                        }
+                    }
+
+                    Log::error('Midtrans Snap token error: ' . $snapError->getMessage());
+                    $errorMessage = $snapError->getMessage();
+                    $errorTrace = $snapError->getTraceAsString();
+
+                    $transaction->status = 'failed';
+                    $transaction->payment_details = json_encode([
+                        'error' => $errorMessage,
+                        'trace' => $errorTrace,
+                        'type' => 'donation'
+                    ]);
+                    $transaction->save();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to process donation. Please try again.',
+                        'debug_message' => app()->environment('local') ? $errorMessage : null,
+                        'error' => app()->environment('local') ? $errorMessage : 'Payment service error'
+                    ], 500);
+                }
+            } catch (Exception $e) {
+                Log::error('Midtrans donation error: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process donation. Please try again.',
+                    'debug_message' => app()->environment('local') ? $e->getMessage() : null,
+                    'error' => app()->environment('local') ? $e->getMessage() : 'Payment service error'
+                ], 500);
+            }
+        } catch (Exception $e) {
+            Log::error('Midtrans general error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process donation. Please try again.',
+                'debug_message' => app()->environment('local') ? $e->getMessage() : null,
+                'error' => app()->environment('local') ? $e->getMessage() : 'Payment service error'
+            ], 500);
+        }
+    }
 }
