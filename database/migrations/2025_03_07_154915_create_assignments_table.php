@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description');
             $table->integer('points')->default(100);
             $table->timestamp('due_date')->nullable();
+            $table->string('file_path')->nullable();
             $table->timestamps();
         });
     }

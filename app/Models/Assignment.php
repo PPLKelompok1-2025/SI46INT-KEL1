@@ -15,6 +15,7 @@ class Assignment extends Model
         'description',
         'points',
         'due_date',
+        'file_path',
     ];
 
     protected $casts = [
