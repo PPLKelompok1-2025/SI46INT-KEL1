@@ -22,9 +22,14 @@ class AssignmentController extends Controller
     public function index(Lesson $lesson)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
-        $assignments = $lesson->assignments()->orderBy('created_at', 'desc')->get();
+        $assignments = $lesson->assignments()
+            ->withCount('submissions')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('Instructor/Assignments/Index', [
             'lesson' => $lesson->load('course'),
@@ -41,7 +46,9 @@ class AssignmentController extends Controller
     public function create(Lesson $lesson)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         return Inertia::render('Instructor/Assignments/Create', [
             'lesson' => $lesson->load('course')
@@ -58,13 +65,15 @@ class AssignmentController extends Controller
     public function store(Request $request, Lesson $lesson)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'due_date' => 'required|date|after:today',
-            'max_score' => 'required|integer|min:1',
+            'due_date' => 'required|date',
+            'points' => 'required|integer|min:1',
             'file' => 'nullable|file|max:10240', // 10MB max
         ]);
 
@@ -73,7 +82,7 @@ class AssignmentController extends Controller
         $assignment->title = $validated['title'];
         $assignment->description = $validated['description'];
         $assignment->due_date = $validated['due_date'];
-        $assignment->max_score = $validated['max_score'];
+        $assignment->points = $validated['points'];
 
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('assignments', 'public');
@@ -82,8 +91,7 @@ class AssignmentController extends Controller
 
         $assignment->save();
 
-        return redirect()->route('instructor.courses.lessons.assignments.index', [
-            'course' => $lesson->course_id,
+        return redirect()->route('instructor.lessons.assignments.index', [
             'lesson' => $lesson->id
         ])->with('success', 'Assignment created successfully');
     }
@@ -98,12 +106,16 @@ class AssignmentController extends Controller
     public function show(Lesson $lesson, Assignment $assignment)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         // Ensure the assignment belongs to the lesson
         if ($assignment->lesson_id !== $lesson->id) {
             abort(404);
         }
+
+        $assignment->loadCount('submissions');
 
         return Inertia::render('Instructor/Assignments/Show', [
             'lesson' => $lesson->load('course'),
@@ -121,7 +133,9 @@ class AssignmentController extends Controller
     public function edit(Lesson $lesson, Assignment $assignment)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         // Ensure the assignment belongs to the lesson
         if ($assignment->lesson_id !== $lesson->id) {
@@ -145,7 +159,9 @@ class AssignmentController extends Controller
     public function update(Request $request, Lesson $lesson, Assignment $assignment)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         // Ensure the assignment belongs to the lesson
         if ($assignment->lesson_id !== $lesson->id) {
@@ -156,14 +172,14 @@ class AssignmentController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'due_date' => 'required|date',
-            'max_score' => 'required|integer|min:1',
+            'points' => 'required|integer|min:1',
             'file' => 'nullable|file|max:10240', // 10MB max
         ]);
 
         $assignment->title = $validated['title'];
         $assignment->description = $validated['description'];
         $assignment->due_date = $validated['due_date'];
-        $assignment->max_score = $validated['max_score'];
+        $assignment->points = $validated['points'];
 
         if ($request->hasFile('file')) {
             // Delete old file if exists
@@ -177,8 +193,7 @@ class AssignmentController extends Controller
 
         $assignment->save();
 
-        return redirect()->route('instructor.courses.lessons.assignments.index', [
-            'course' => $lesson->course_id,
+        return redirect()->route('instructor.lessons.assignments.index', [
             'lesson' => $lesson->id
         ])->with('success', 'Assignment updated successfully');
     }
@@ -193,7 +208,9 @@ class AssignmentController extends Controller
     public function destroy(Lesson $lesson, Assignment $assignment)
     {
         // Ensure the instructor owns the course this lesson belongs to
-        $this->authorize('view', $lesson);
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         // Ensure the assignment belongs to the lesson
         if ($assignment->lesson_id !== $lesson->id) {
@@ -207,8 +224,7 @@ class AssignmentController extends Controller
 
         $assignment->delete();
 
-        return redirect()->route('instructor.courses.lessons.assignments.index', [
-            'course' => $lesson->course_id,
+        return redirect()->route('instructor.lessons.assignments.index', [
             'lesson' => $lesson->id
         ])->with('success', 'Assignment deleted successfully');
     }
@@ -248,7 +264,10 @@ class AssignmentController extends Controller
     public function submissions(Assignment $assignment)
     {
         // Ensure the instructor owns the course this assignment belongs to
-        $this->authorize('view', $assignment->lesson);
+        $lesson = $assignment->lesson;
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $submissions = $assignment->submissions()
             ->with('user')
@@ -271,10 +290,13 @@ class AssignmentController extends Controller
     public function gradeSubmission(Request $request, AssignmentSubmission $submission)
     {
         // Ensure the instructor owns the course this submission belongs to
-        $this->authorize('view', $submission->assignment->lesson);
+        $lesson = $submission->assignment->lesson;
+        if (Auth::id() !== $lesson->course->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $validated = $request->validate([
-            'score' => 'required|integer|min:0|max:' . $submission->assignment->max_score,
+            'score' => 'required|integer|min:0|max:' . $submission->assignment->points,
             'feedback' => 'nullable|string'
         ]);
 

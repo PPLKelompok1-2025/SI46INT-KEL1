@@ -140,6 +140,17 @@ export default function Show({ lesson, course }) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" asChild>
+                            <Link
+                                href={route(
+                                    'instructor.lessons.assignments.index',
+                                    lesson.id,
+                                )}
+                            >
+                                <ListChecks className="mr-2 h-4 w-4" />
+                                Assignments
+                            </Link>
+                        </Button>
                         <Button
                             variant="outline"
                             onClick={handleDelete}

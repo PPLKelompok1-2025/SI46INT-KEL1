@@ -20,7 +20,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 
-export default function CourseReviews({ auth, course, reviews }) {
+export default function CourseReviews({ course, reviews }) {
     // Calculate average rating
     const avgRating =
         reviews.data.length > 0
@@ -29,7 +29,7 @@ export default function CourseReviews({ auth, course, reviews }) {
             : 0;
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title={`${course.title} - Reviews`} />
 
             <div className="space-y-6">
