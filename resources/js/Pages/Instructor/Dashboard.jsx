@@ -180,7 +180,7 @@ export default function Dashboard({
                                                 asChild
                                             >
                                                 <Link
-                                                    href={`/instructor/courses/${enrollment.course.id}/students`}
+                                                    href={`/instructor/courses/${enrollment.course.id}?tab=students`}
                                                     prefetch="hover"
                                                 >
                                                     View
