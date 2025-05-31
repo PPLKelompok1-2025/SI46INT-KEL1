@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
 use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\DonationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,6 +65,135 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
 
+    // Payment routes
+    Route::prefix('payment')->name('payment.')->group(function () {
+        // Route::post('/process', [PaymentController::class, 'process'])->name('process');
+        // Route::get('/success', [PaymentController::class, 'success'])->name('success');
+        // Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
+
+        Route::get('/checkout/{course}', [CourseController::class, 'checkout'])->name('checkout');
+
+        // Midtrans payment routes
+        Route::post('/validate-promo', [PromoCodeController::class, 'validatePromoCode'])->name('validate-promo');
+
+        Route::post('/midtrans/token/{course}', [MidtransController::class, 'getSnapToken'])->name('midtrans.token');
+        Route::post('/midtrans/notification', [MidtransController::class, 'handleNotification'])->name('midtrans.notification');
+        Route::get('/midtrans/callback', [MidtransController::class, 'handleCallback'])->name('midtrans.callback');
+        Route::post('/donation/{course}', [DonationController::class, 'process'])->name('donation');
+
+        // Donation routes
+        Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
+        Route::post('/donation/{course}/process', [DonationController::class, 'process'])->name('donation.process');
+        Route::get('/donation/callback', [DonationController::class, 'handleCallback'])->name('donation.callback');
+        Route::post('/donation/notification', [DonationController::class, 'handleNotification'])->name('donation.notification');
+    });
+
+    // Admin routes
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Analytics routes
+        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+        // User management
+        Route::resource('users', UserController::class);
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
+
+        // Course management
+        Route::resource('courses', AdminCourseController::class);
+        Route::patch('/courses/{course}/approve', [AdminCourseController::class, 'approve'])->name('courses.approve');
+        Route::patch('/courses/{course}/feature', [AdminCourseController::class, 'feature'])->name('courses.feature');
+
+        // Category management
+        Route::resource('categories', AdminCategoryController::class);
+
+        // Transaction management
+        Route::get('/transactions/export', [AdminTransactionController::class, 'export'])->name('transactions.export');
+        Route::resource('transactions', AdminTransactionController::class)->only(['index', 'show']);
+        Route::post('/transactions/{transaction}/refund', [AdminTransactionController::class, 'refund'])->name('transactions.refund');
+
+        // Reviews management
+        Route::get('/reviews', [App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/reported', [App\Http\Controllers\Admin\ReviewController::class, 'reported'])->name('reviews.reported');
+        Route::get('/reviews/course/{course}', [App\Http\Controllers\Admin\ReviewController::class, 'course'])->name('reviews.course');
+        Route::get('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('reviews.show');
+        Route::get('/reviews/{review}/edit', [App\Http\Controllers\Admin\ReviewController::class, 'edit'])->name('reviews.edit');
+        Route::put('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'update'])->name('reviews.update');
+        Route::delete('/reviews/{review}', [App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
+        Route::patch('/reviews/{review}/approve', [App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
+        Route::patch('/reviews/{review}/approve-reported', [App\Http\Controllers\Admin\ReviewController::class, 'approveReported'])->name('reviews.approve-reported');
+        Route::post('/reviews/{review}/respond', [App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
+
+        // Reports
+        Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/users', [ReportController::class, 'users'])->name('reports.users');
+        Route::get('/reports/courses', [ReportController::class, 'courses'])->name('reports.courses');
+
+        // Promo code management
+        Route::resource('promo-codes', AdminPromoCodeController::class);
+        Route::patch('/promo-codes/{promoCode}/toggle-active', [AdminPromoCodeController::class, 'toggleActive'])->name('promo-codes.toggle-active');
+    });
+
+    // Instructor routes
+    Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
+        Route::get('/dashboard', [InstructorDashboardController::class, 'index'])->name('dashboard');
+
+        // Course management
+        Route::resource('courses', InstructorCourseController::class);
+        Route::patch('/courses/{course}/publish', [InstructorCourseController::class, 'togglePublish'])->name('courses.publish');
+
+        // Donations management
+        Route::get('/courses/{course}/donations', [DonationController::class, 'courseIndex'])->name('courses.donations');
+
+        // Reviews management
+        Route::get('/reviews', [InstructorReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/course/{course}', [InstructorReviewController::class, 'course'])->name('reviews.course');
+        Route::get('/reviews/{review}', [InstructorReviewController::class, 'show'])->name('reviews.show');
+        Route::post('/reviews/{review}/respond', [InstructorReviewController::class, 'respond'])->name('reviews.respond');
+        Route::post('/reviews/{review}/report', [InstructorReviewController::class, 'report'])->name('reviews.report');
+
+        // Lesson routes - nested under courses
+        Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
+        Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
+        Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
+        Route::put('courses/{course}/lessons/{lesson}', [LessonController::class, 'update'])->name('courses.lessons.update');
+        Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
+        Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
+        Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
+        Route::post('courses/{course}/lessons/reorder', [LessonController::class, 'reorder'])->name('courses.lessons.reorder');
+
+
+        // Video handling routes
+        Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');
+        Route::post('lessons/videos/delete', [LessonController::class, 'deleteTemporaryVideo'])->name('lessons.videos.delete');
+        Route::get('lessons/{lesson}/video', [LessonController::class, 'streamVideo'])->name('lessons.videos.stream');
+
+        // Student management
+        Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/students/course/{course}', [StudentController::class, 'course'])->name('students.course');
+        Route::get('/students/{enrollment}', [StudentController::class, 'show'])->name('students.show');
+        Route::delete('/students/{enrollment}', [StudentController::class, 'removeStudent'])->name('students.remove');
+
+        // Lesson management
+        // Route::resource('courses.lessons', LessonController::class);
+
+        // Quiz management
+        Route::resource('lessons.quizzes', InstructorQuizController::class);
+        Route::resource('quizzes.questions', QuestionController::class);
+
+        // Assignment management
+        Route::resource('lessons.assignments', InstructorAssignmentController::class);
+        Route::get('/assignments/submissions', [InstructorAssignmentController::class, 'allSubmissions'])->name('assignments.submissions.all');
+        Route::get('/assignments/{assignment}/submissions', [InstructorAssignmentController::class, 'submissions'])->name('assignments.submissions');
+        Route::patch('/assignments/submissions/{submission}/grade', [InstructorAssignmentController::class, 'gradeSubmission'])->name('assignments.submissions.grade');
+
+        // Earnings routes
+        Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
+        Route::get('/earnings/withdraw', [EarningController::class, 'withdrawForm'])->name('earnings.withdraw');
+        Route::post('/earnings/withdraw', [EarningController::class, 'requestWithdrawal'])->name('earnings.request-withdrawal');
+        Route::get('/earnings/courses/{course}', [EarningController::class, 'courseEarnings'])->name('earnings.course');
+    });
+
     // Student routes
     Route::middleware(['role:student'])->prefix('student')->name('student.')->group(function () {
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
@@ -79,6 +209,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/courses/{course}/review', [StudentCourseController::class, 'review'])->name('courses.review');
         Route::put('/courses/{course}/review/{review}', [StudentCourseController::class, 'updateReview'])->name('courses.review.update');
         Route::delete('/courses/{course}/review/{review}', [StudentCourseController::class, 'deleteReview'])->name('courses.review.delete');
+
+        // Transaction routes
+        Route::get('/transactions', [App\Http\Controllers\Student\TransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{transaction}', [App\Http\Controllers\Student\TransactionController::class, 'show'])->name('transactions.show');
+        Route::get('/donations/{donation}', [App\Http\Controllers\Student\TransactionController::class, 'showDonation'])->name('donations.show');
 
         // Video streaming route for students
         Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
