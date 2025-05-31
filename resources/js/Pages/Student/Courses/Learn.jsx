@@ -1,3 +1,4 @@
+import VideoPlayer from '@/Components/Student/VideoPlayer';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import {
@@ -8,8 +9,17 @@ import {
     CardHeader,
     CardTitle,
 } from '@/Components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/Components/ui/dialog';
 import { Progress } from '@/Components/ui/progress';
 import { Separator } from '@/Components/ui/separator';
+import { Textarea } from '@/Components/ui/textarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
@@ -17,28 +27,75 @@ import {
     CheckCircle,
     ChevronLeft,
     Clock,
-    ExternalLink,
     FileText,
+    ListChecks,
     LockIcon,
     PlayCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 export default function Learn({
     course,
     completedLessons,
     nextLesson,
     progress,
+    activeLesson: initialActiveLesson,
+    note,
 }) {
-    const [activeLesson, setActiveLesson] = useState(nextLesson?.id || null);
-    const [currentVideo, setCurrentVideo] = useState(null);
+    const [activeLesson, setActiveLesson] = useState(
+        initialActiveLesson?.id || nextLesson?.id || null,
+    );
+    const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
     const { post, processing } = useForm();
+    const initialNoteContent =
+        note?.content ?? localStorage.getItem('note-' + course.id) ?? '';
+    const noteForm = useForm({ content: initialNoteContent });
+    const {
+        data: noteData,
+        setData: setNoteData,
+        post: storeNote,
+        put: updateNote,
+        processing: noteProcessing,
+    } = noteForm;
 
     useEffect(() => {
-        if (nextLesson?.id) {
+        if (initialActiveLesson?.id) {
+            setActiveLesson(initialActiveLesson.id);
+        } else if (nextLesson?.id) {
             setActiveLesson(nextLesson.id);
         }
-    }, [nextLesson]);
+    }, [initialActiveLesson, nextLesson]);
+
+    useEffect(() => {
+        localStorage.setItem('note-' + course.id, noteData.content);
+    }, [noteData.content, course.id]);
+
+    const handleSaveNote = (e) => {
+        e.preventDefault();
+        if (note?.id) {
+            updateNote(route('student.notes.update', note.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Note saved');
+                    setIsNoteDialogOpen(false);
+                    localStorage.removeItem('note-' + course.id);
+                },
+            });
+        } else {
+            storeNote(route('student.notes.store', course.id), {
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    toast.success('Note created');
+                    setIsNoteDialogOpen(false);
+                    localStorage.removeItem('note-' + course.id);
+                    if (page.props.flash && page.props.flash.new_note_id) {
+                        noteForm.setData('id', page.props.flash.new_note_id);
+                    }
+                },
+            });
+        }
+    };
 
     const handleLessonSelect = (lessonId) => {
         // Only allow selecting if the lesson is free or user has completed prerequisites
@@ -55,14 +112,10 @@ export default function Learn({
 
         if (canAccess) {
             setActiveLesson(lessonId);
-            router.get(
-                route('student.courses.lessons.show', [course.slug, lessonId]),
-                {},
-                {
-                    preserveState: true,
-                    only: ['lesson'],
-                },
-            );
+            // Update the URL to include the lesson ID as a query parameter without a full page reload
+            const url = new URL(window.location);
+            url.searchParams.set('lesson', lessonId);
+            window.history.pushState({}, '', url);
         }
     };
 
@@ -72,6 +125,20 @@ export default function Learn({
                 // Add the lesson to completed lessons if not already there
                 if (!completedLessons.includes(lessonId)) {
                     completedLessons.push(lessonId);
+
+                    // Update progress calculation
+                    const newCompletedCount = completedLessons.length;
+                    const totalLessons = course.lessons.length;
+                    const newPercentage = Math.round(
+                        (newCompletedCount / totalLessons) * 100,
+                    );
+
+                    // Update progress state
+                    progress.completed_lessons = newCompletedCount;
+                    progress.percentage = newPercentage;
+
+                    // Show success notification
+                    toast.success('Lesson completed!');
                 }
             },
         });
@@ -198,6 +265,75 @@ export default function Learn({
                                     </div>
                                 );
                             })}
+
+                            {/* Display assignments for the selected lesson */}
+                            {selectedLesson &&
+                                selectedLesson.assignments &&
+                                selectedLesson.assignments.length > 0 && (
+                                    <div className="border-t p-4">
+                                        <h4 className="mb-3 text-sm font-medium text-muted-foreground">
+                                            Assignments for{' '}
+                                            {selectedLesson.title}
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {selectedLesson.assignments.map(
+                                                (assignment) => (
+                                                    <Button
+                                                        key={assignment.id}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        asChild
+                                                        className="w-full justify-start text-sm"
+                                                    >
+                                                        <Link
+                                                            href={route(
+                                                                'student.assignments.show',
+                                                                assignment.id,
+                                                            )}
+                                                        >
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            {assignment.title}
+                                                        </Link>
+                                                    </Button>
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                            {/* Display quizzes for the selected lesson */}
+                            {selectedLesson &&
+                                selectedLesson.quizzes &&
+                                selectedLesson.quizzes.length > 0 && (
+                                    <div className="border-t p-4">
+                                        <h4 className="mb-3 text-sm font-medium text-muted-foreground">
+                                            Quizzes for {selectedLesson.title}
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {selectedLesson.quizzes.map(
+                                                (quiz) => (
+                                                    <Button
+                                                        key={quiz.id}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        asChild
+                                                        className="w-full justify-start text-sm"
+                                                    >
+                                                        <Link
+                                                            href={route(
+                                                                'student.quizzes.show',
+                                                                quiz.id,
+                                                            )}
+                                                        >
+                                                            <ListChecks className="mr-2 h-4 w-4" />
+                                                            {quiz.title}
+                                                        </Link>
+                                                    </Button>
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col items-stretch gap-2">
@@ -282,88 +418,65 @@ export default function Learn({
                             <CardContent className="space-y-4">
                                 {/* Video Player Placeholder */}
                                 <div className="aspect-video overflow-hidden rounded-lg bg-muted">
-                                    {currentVideo ? (
-                                        <video
-                                            controls
-                                            className="h-full w-full"
-                                            autoPlay
-                                            src={route(
-                                                'student.lessons.videos.stream',
-                                                selectedLesson.id,
-                                            )}
-                                        />
+                                    {selectedLesson &&
+                                    (selectedLesson.video_path ||
+                                        selectedLesson.video_url) ? (
+                                        selectedLesson.video_path ? (
+                                            <VideoPlayer
+                                                lesson={selectedLesson}
+                                                autoPlay={true}
+                                            />
+                                        ) : selectedLesson.video_url ? (
+                                            <div className="aspect-video w-full overflow-hidden rounded-lg">
+                                                <iframe
+                                                    src={
+                                                        selectedLesson.video_url
+                                                    }
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                    className="h-full w-full"
+                                                ></iframe>
+                                            </div>
+                                        ) : null
                                     ) : (
                                         <div className="flex h-full w-full flex-col items-center justify-center">
                                             <PlayCircle className="mb-2 h-12 w-12 text-muted-foreground" />
                                             <p className="text-center text-sm text-muted-foreground">
-                                                Click to play video
+                                                {selectedLesson
+                                                    ? 'No video for this lesson.'
+                                                    : 'Select a lesson to see video.'}
                                             </p>
-                                            <Button
-                                                variant="secondary"
-                                                className="mt-4"
-                                                onClick={() =>
-                                                    setCurrentVideo(true)
-                                                }
-                                            >
-                                                Watch Lesson
-                                            </Button>
                                         </div>
                                     )}
                                 </div>
 
                                 <Separator />
 
-                                {/* Lesson Description */}
-                                <div className="prose dark:prose-invert max-w-none">
-                                    <h3 className="mb-2 text-lg font-medium">
-                                        Lesson Description
-                                    </h3>
-                                    <p>
-                                        This lesson covers the key concepts and
-                                        practical examples to help you master
-                                        the topic. Follow along with the video
-                                        and complete the exercises to get the
-                                        most out of this lesson.
-                                    </p>
-                                </div>
-
-                                {/* Lesson Resources */}
-                                <div>
-                                    <h3 className="mb-2 text-lg font-medium">
-                                        Resources
-                                    </h3>
-                                    <div className="space-y-2">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-start"
-                                            asChild
-                                        >
-                                            <a
-                                                href="#"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                Lesson Slides
-                                                <ExternalLink className="ml-2 h-3 w-3 opacity-70" />
-                                            </a>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-start"
-                                            asChild
-                                        >
-                                            <a
-                                                href="#"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                Exercise Files
-                                                <ExternalLink className="ml-2 h-3 w-3 opacity-70" />
-                                            </a>
-                                        </Button>
+                                {/* Lesson Description & Content */}
+                                {selectedLesson?.description && (
+                                    <div className="prose dark:prose-invert max-w-none">
+                                        <h3 className="mb-2 text-lg font-medium">
+                                            Lesson Description
+                                        </h3>
+                                        <p>{selectedLesson.description}</p>
                                     </div>
+                                )}
+
+                                <div className="prose dark:prose-invert max-w-none">
+                                    {selectedLesson?.content ? (
+                                        <div
+                                            dangerouslySetInnerHTML={{
+                                                __html: selectedLesson.content,
+                                            }}
+                                        />
+                                    ) : (
+                                        selectedLesson && (
+                                            <p className="text-muted-foreground">
+                                                No content available for this
+                                                lesson.
+                                            </p>
+                                        )
+                                    )}
                                 </div>
                             </CardContent>
 
@@ -468,6 +581,45 @@ export default function Learn({
                     )}
                 </Card>
             </div>
+
+            {/* Note-taking Dialog */}
+            <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button
+                        className="fixed bottom-4 right-4 z-50 rounded-full p-3 shadow-lg"
+                        variant="secondary"
+                    >
+                        <FileText className="h-6 w-6" />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Course Notes</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSaveNote} className="space-y-4">
+                        <Textarea
+                            value={noteData.content}
+                            onChange={(e) =>
+                                setNoteData('content', e.target.value)
+                            }
+                            className="h-40 w-full"
+                            placeholder="Write your notes here..."
+                        />
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsNoteDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={noteProcessing}>
+                                Save
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AuthenticatedLayout>
     );
 }

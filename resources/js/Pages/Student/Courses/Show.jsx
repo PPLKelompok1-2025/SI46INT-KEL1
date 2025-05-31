@@ -168,18 +168,24 @@ export default function Show({
 
                     <div className="flex flex-wrap gap-2">
                         {isEnrolled ? (
-                            <Button asChild>
-                                <Link
-                                    href={route(
-                                        'student.courses.learn',
-                                        course.id,
-                                    )}
+                            progress?.percentage === 100 ? (
+                                <Button
+                                    onClick={() => handleTabChange('reviews')}
                                 >
-                                    {progress?.percentage === 100
-                                        ? 'Review Course'
-                                        : 'Continue Learning'}
-                                </Link>
-                            </Button>
+                                    Review Course
+                                </Button>
+                            ) : (
+                                <Button asChild>
+                                    <Link
+                                        href={route(
+                                            'student.courses.learn',
+                                            course.id,
+                                        )}
+                                    >
+                                        Continue Learning
+                                    </Link>
+                                </Button>
+                            )
                         ) : (
                             <Button
                                 onClick={handleEnroll}

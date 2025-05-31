@@ -198,11 +198,8 @@ export default function Index({ courses, page = 1, isNextPageExists = false }) {
                         title="No courses"
                         description="You haven't enrolled in any courses yet"
                         icon={<BookOpen className="h-10 w-10" />}
-                        action={
-                            <Button asChild>
-                                <Link href="/courses">Browse Courses</Link>
-                            </Button>
-                        }
+                        buttonText="Browse Courses"
+                        buttonLink="/courses"
                     />
                 )}
             </div>
