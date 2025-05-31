@@ -24,10 +24,10 @@ import {
     LogOut,
     Menu,
     Search,
-    Settings,
     Star,
     Ticket,
     Users,
+    Wallet,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -76,7 +76,12 @@ export default function AuthenticatedLayout({ children }) {
                     href: '/admin/promo-codes',
                     icon: Ticket,
                 },
-                { name: 'Settings', href: '/admin/settings', icon: Settings },
+                {
+                    name: 'Withdrawal Requests',
+                    href: '/admin/withdrawal-requests',
+                    icon: Wallet,
+                },
+                // { name: 'Settings', href: '/admin/settings', icon: Settings },
             ];
         } else if (role === 'instructor') {
             return [
@@ -101,15 +106,20 @@ export default function AuthenticatedLayout({ children }) {
                     icon: DollarSign,
                 },
                 {
+                    name: 'Payment Methods',
+                    href: '/instructor/payment-methods',
+                    icon: Wallet,
+                },
+                {
                     name: 'Reviews',
                     href: '/instructor/reviews',
                     icon: Star,
                 },
-                {
-                    name: 'Settings',
-                    href: '/instructor/settings',
-                    icon: Settings,
-                },
+                // {
+                //     name: 'Settings',
+                //     href: '/instructor/settings',
+                //     icon: Settings,
+                // },
             ];
         } else if (role === 'student') {
             return [
@@ -125,12 +135,17 @@ export default function AuthenticatedLayout({ children }) {
                 },
                 { name: 'Wishlist', href: '/student/wishlist', icon: Heart },
                 {
+                    name: 'Transactions',
+                    href: '/student/transactions',
+                    icon: CreditCard,
+                },
+                {
                     name: 'Certificates',
                     href: '/student/certificates',
                     icon: Award,
                 },
                 { name: 'Notes', href: '/student/notes', icon: FileText },
-                { name: 'Settings', href: '/student/settings', icon: Settings },
+                // { name: 'Settings', href: '/student/settings', icon: Settings },
             ];
         } else {
             // Default navigation for other roles or unauthenticated users

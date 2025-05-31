@@ -27,7 +27,7 @@ import {
     Search,
     Star,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function Index({
     courses,
@@ -39,6 +39,9 @@ export default function Index({
 }) {
     const { auth } = usePage().props;
     const [showFilters, setShowFilters] = useState(false);
+    const [searchInputValue, setSearchInputValue] = useState(
+        filters.search || '',
+    );
 
     const { data, setData } = useForm({
         search: filters.search || '',
@@ -48,32 +51,37 @@ export default function Index({
         instructor: filters.instructor || '',
     });
 
-    const debouncedSearch = debounce((value) => {
-        setData('search', value);
-        applyFilters();
-    }, 500);
+    const debouncedSearch = useCallback(
+        debounce((value) => {
+            setData('search', value);
+            router.get(
+                route('courses.index'),
+                {
+                    search: value,
+                    category: data.category,
+                    level: data.level,
+                    sort: data.sort,
+                    instructor: data.instructor,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: false,
+                },
+            );
+        }, 500),
+        [data.category, data.level, data.sort, data.instructor],
+    );
+
+    useEffect(() => {
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [debouncedSearch]);
 
     const handleSearchChange = (e) => {
         const value = e.target.value;
-        setData('search', value);
+        setSearchInputValue(value);
         debouncedSearch(value);
-    };
-
-    const applyFilters = () => {
-        router.get(
-            route('courses.index'),
-            {
-                search: data.search,
-                category: data.category,
-                level: data.level,
-                sort: data.sort,
-                instructor: data.instructor,
-            },
-            {
-                preserveState: true,
-                preserveScroll: false,
-            },
-        );
     };
 
     const handleFilterChange = (field, value) => {
@@ -89,6 +97,11 @@ export default function Index({
                 only: ['courses', 'page', 'isNextPageExists'],
             },
         );
+    };
+
+    const clearFilters = () => {
+        setSearchInputValue('');
+        router.get(route('courses.index'));
     };
 
     const renderStarRating = (rating) => {
@@ -121,7 +134,7 @@ export default function Index({
                 <div className="relative flex-1">
                     <Input
                         placeholder="Search courses..."
-                        value={data.search}
+                        value={searchInputValue}
                         onChange={handleSearchChange}
                         className="pl-10"
                     />
@@ -214,9 +227,7 @@ export default function Index({
                     <p className="mb-4 text-sm text-gray-500">
                         Try adjusting your search or filter criteria
                     </p>
-                    <Button onClick={() => router.get(route('courses.index'))}>
-                        Clear Filters
-                    </Button>
+                    <Button onClick={clearFilters}>Clear Filters</Button>
                 </div>
             ) : (
                 <>
