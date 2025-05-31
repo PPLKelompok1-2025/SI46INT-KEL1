@@ -80,6 +80,14 @@ class User extends Authenticatable
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * Get the donations made by the user.
+     */
+    public function donations()
+    {
+        return $this->hasMany(Donation::class);
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';

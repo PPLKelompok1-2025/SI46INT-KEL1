@@ -1,11 +1,31 @@
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { formatCurrency } from '@/lib/utils';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { BookOpen, CheckCircle, Clock, Star, Users } from 'lucide-react';
+import axios from 'axios';
+import {
+    BookOpen,
+    CheckCircle,
+    Clock,
+    HeartHandshake,
+    Star,
+    Users,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function Show({
     course,
@@ -14,6 +34,9 @@ export default function Show({
     activeTab = 'overview',
 }) {
     const { auth } = usePage().props;
+    const [donationModalOpen, setDonationModalOpen] = useState(false);
+    const [donationAmount, setDonationAmount] = useState(10000);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleTabChange = (value) => {
         router.get(
@@ -51,6 +74,119 @@ export default function Show({
     const handleEnrollment = () => {
         router.visit(route('payment.checkout', course.id));
     };
+
+    const handleDonation = async () => {
+        if (!donationAmount || donationAmount < 1000) {
+            toast.error(
+                'Please enter a valid donation amount (minimum Rp 1,000)',
+            );
+            return;
+        }
+
+        setIsProcessing(true);
+
+        try {
+            const response = await axios.post(
+                route('payment.donation.process', course.id),
+                {
+                    amount: donationAmount,
+                    message: '', // Optional message could be added to UI
+                },
+            );
+
+            if (response.data.success && response.data.snap_token) {
+                window.snap.pay(response.data.snap_token, {
+                    onSuccess: (result) => {
+                        toast.success('Thank you for your donation!');
+                        setDonationModalOpen(false);
+                        router.visit(
+                            route('payment.donation.callback', {
+                                order_id: response.data.order_id,
+                                transaction_status: 'capture',
+                                transaction_time: new Date().toISOString(),
+                                ...result,
+                            }),
+                        );
+                    },
+                    onPending: (result) => {
+                        toast.success('Your donation is being processed!');
+                        setDonationModalOpen(false);
+                        router.visit(
+                            route('payment.donation.callback', {
+                                order_id: response.data.order_id,
+                                transaction_status: 'pending',
+                                transaction_time: new Date().toISOString(),
+                                ...result,
+                            }),
+                        );
+                    },
+                    onError: (result) => {
+                        console.error('Payment error:', result);
+                        toast.error('Donation failed. Please try again.');
+                        setDonationModalOpen(false);
+                        setIsProcessing(false);
+                    },
+                    onClose: () => {
+                        setIsProcessing(false);
+                        toast.error('Donation window was closed.');
+                    },
+                });
+            } else {
+                console.error('Invalid response:', response.data);
+                toast.error(
+                    response.data.message ||
+                        'Failed to process donation. Please try again.',
+                );
+                setIsProcessing(false);
+            }
+        } catch (error) {
+            console.error('Donation error:', error);
+            const errorMessage =
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                'Failed to process donation. Please try again.';
+            toast.error(errorMessage);
+            setIsProcessing(false);
+        }
+    };
+
+    useEffect(() => {
+        if (auth && parseFloat(course.price) === 0) {
+            const midtransScriptUrl =
+                window.config?.midtransSnapUrl ||
+                'https://app.sandbox.midtrans.com/snap/snap.js';
+            const clientKey = window.config?.midtransClientKey;
+
+            const existingScript = document.getElementById('midtrans-script');
+            if (existingScript) {
+                existingScript.remove();
+            }
+
+            const scriptTag = document.createElement('script');
+            scriptTag.src = midtransScriptUrl;
+            scriptTag.setAttribute('data-client-key', clientKey);
+            scriptTag.setAttribute('id', 'midtrans-script');
+            scriptTag.async = true;
+
+            scriptTag.onload = () => {
+                console.log('Midtrans script loaded successfully');
+            };
+
+            scriptTag.onerror = (error) => {
+                console.error('Failed to load Midtrans script:', error);
+            };
+
+            document.body.appendChild(scriptTag);
+
+            return () => {
+                const scriptToRemove =
+                    document.getElementById('midtrans-script');
+                if (scriptToRemove) {
+                    scriptToRemove.remove();
+                }
+            };
+        }
+    }, [auth, course.price]);
 
     return (
         <PublicLayout>
@@ -361,31 +497,73 @@ export default function Show({
 
                             <div className="mb-6 text-center">
                                 <div className="mb-2 text-3xl font-bold">
-                                    {course.price === 0
+                                    {parseFloat(course.price) === 0
                                         ? 'Free'
                                         : formatCurrency(course.price)}
                                 </div>
                             </div>
 
                             {auth?.user ? (
-                                auth.user.id !== course.user.id ? (
-                                    <Button
-                                        className="w-full"
-                                        onClick={handleEnrollment}
-                                    >
-                                        Enroll Now
-                                    </Button>
-                                ) : (
-                                    <Button className="w-full" asChild>
-                                        <Link
-                                            href={route(
-                                                'instructor.courses.show',
-                                                course.id,
-                                            )}
+                                auth.user.id !== course.user.id &&
+                                !course.is_enrolled ? (
+                                    <div className="space-y-2">
+                                        <Button
+                                            className="w-full"
+                                            onClick={handleEnrollment}
                                         >
-                                            View Course
-                                        </Link>
-                                    </Button>
+                                            Enroll Now
+                                        </Button>
+
+                                        {parseFloat(course.price) === 0 && (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() =>
+                                                    setDonationModalOpen(true)
+                                                }
+                                            >
+                                                <HeartHandshake className="mr-2 h-4 w-4" />
+                                                Donate to Creator
+                                            </Button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Button className="w-full" asChild>
+                                            <Link
+                                                href={
+                                                    auth.user.id ===
+                                                    course.user.id
+                                                        ? route(
+                                                              'instructor.courses.show',
+                                                              course.id,
+                                                          )
+                                                        : route(
+                                                              'student.courses.show',
+                                                              course.slug,
+                                                          )
+                                                }
+                                            >
+                                                View Course
+                                            </Link>
+                                        </Button>
+
+                                        {parseFloat(course.price) === 0 &&
+                                            course.is_enrolled && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() =>
+                                                        setDonationModalOpen(
+                                                            true,
+                                                        )
+                                                    }
+                                                >
+                                                    <HeartHandshake className="mr-2 h-4 w-4" />
+                                                    Donate to Creator
+                                                </Button>
+                                            )}
+                                    </div>
                                 )
                             ) : (
                                 <>
@@ -508,6 +686,63 @@ export default function Show({
                     )}
                 </div>
             </div>
+
+            <Dialog
+                open={donationModalOpen}
+                onOpenChange={setDonationModalOpen}
+            >
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Support this Creator</DialogTitle>
+                        <DialogDescription>
+                            Your donation helps the course creator continue
+                            making great content.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="amount" className="text-right">
+                                Amount
+                            </Label>
+                            <div className="col-span-3">
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-sm text-muted-foreground">
+                                        Rp
+                                    </span>
+                                    <Input
+                                        id="amount"
+                                        className="pl-8"
+                                        type="number"
+                                        min="1000"
+                                        step="1000"
+                                        value={donationAmount}
+                                        onChange={(e) =>
+                                            setDonationAmount(
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                        placeholder="10000"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDonationModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleDonation}
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? 'Processing...' : 'Donate'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </PublicLayout>
     );
 }
