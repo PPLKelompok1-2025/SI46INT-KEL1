@@ -70,6 +70,14 @@ class Course extends Model
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * Get the donations for the course.
+     */
+    public function donations()
+    {
+        return $this->hasMany(Donation::class);
+    }
+
     public function getAverageRatingAttribute()
     {
         return $this->reviews()->avg('rating') ?? 0;
