@@ -33,6 +33,18 @@ use App\Http\Controllers\Instructor\ReviewController as InstructorReviewControll
 use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
 use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\VideoController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
 Route::get('/quick-search', [LandingController::class, 'search'])->name('quick-search');
@@ -70,16 +82,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Video streaming route for students
         Route::get('/lessons/{lesson}/video', [StudentCourseController::class, 'streamVideo'])->name('lessons.videos.stream');
-    });
 
-    // Student enrollment routes
-    Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
-    Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'store'])->name('enrollments.store');
-    Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
-    Route::patch('/enrollments/{enrollment}', [EnrollmentController::class, 'update'])->name('enrollments.update');
-    // Transaction routes
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('/courses/{course}/checkout', [TransactionController::class, 'create'])->name('transactions.create');
-    Route::post('/courses/{course}/checkout', [TransactionController::class, 'store'])->name('transactions.store');
-    Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
+        // Quiz taking
+        Route::get('/quizzes/{quiz}', [StudentQuizController::class, 'show'])->name('quizzes.show');
+        Route::post('/quizzes/{quiz}/submit', [StudentQuizController::class, 'submit'])->name('quizzes.submit');
+        Route::get('/quizzes/{quiz}/results', [StudentQuizController::class, 'results'])->name('quizzes.results');
+
+        // Assignment submission
+        Route::get('/assignments/{assignment}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('/assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
+        Route::get('/assignments/{assignment}/feedback', [StudentAssignmentController::class, 'feedback'])->name('assignments.feedback');
+
+        // Certificates
+        Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+        Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+
+        // Wishlist routes
+        Route::get('/wishlist', [StudentCourseController::class, 'wishlist'])->name('wishlist');
+        Route::post('/courses/{course}/wishlist', [StudentCourseController::class, 'toggleWishlist'])->name('courses.wishlist.toggle');
+
+        // Notes routes
+        Route::get('/notes', [StudentNoteController::class, 'index'])->name('notes.index');
+        Route::get('/courses/{course}/notes/create', [StudentNoteController::class, 'create'])->name('notes.create');
+        Route::post('/courses/{course}/notes', [StudentNoteController::class, 'store'])->name('notes.store');
+        Route::get('/notes/{note}/edit', [StudentNoteController::class, 'edit'])->name('notes.edit');
+        Route::put('/notes/{note}', [StudentNoteController::class, 'update'])->name('notes.update');
+        Route::delete('/notes/{note}', [StudentNoteController::class, 'destroy'])->name('notes.destroy');
+    });
 });
+
+// Video serving routes
+Route::get('/video/playlist/{playlist}', [VideoController::class, 'servePlaylist'])->name('video.playlist');
+Route::get('/video/key/{key}', [VideoController::class, 'serveKey'])->name('video.key');
+
+require __DIR__.'/auth.php';

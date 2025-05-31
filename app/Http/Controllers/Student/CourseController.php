@@ -331,59 +331,6 @@ class CourseController extends Controller
         return redirect()->back()->with('success', 'Course removed from wishlist');
     }
 
-    /**
-     * Stream encrypted video for students.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Lesson  $lesson
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
-     */
-    public function streamVideo(Request $request, Lesson $lesson)
-    {
-        $course = $lesson->course;
-        $user = Auth::user();
-
-        // Check if user is enrolled in the course or if the lesson is free
-        $isEnrolled = $course->enrollments()
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->exists();
-
-        if (!$isEnrolled && !$lesson->is_free) {
-            return Response::json(['error' => 'Unauthorized access. You must be enrolled in this course to access this video.'], 403);
-        }
-
-        if (!$lesson->hasEncryptedVideo()) {
-            return Response::json(['error' => 'No video available'], 404);
-        }
-
-        // For .m3u8 playlist file
-        if ($request->has('playlist')) {
-            $path = Storage::disk($lesson->video_disk)->path($lesson->video_path);
-            return Response::file($path);
-        }
-
-        // For .ts segment files
-        if ($request->has('segment')) {
-            $segmentPath = dirname($lesson->video_path) . '/' . $request->segment;
-            $path = Storage::disk($lesson->video_disk)->path($segmentPath);
-            return Response::file($path);
-        }
-
-        // For .key file
-        if ($request->has('key')) {
-            // Ensure this is authenticated and authorized - we already checked above
-            if (!$lesson->encryption_key) {
-                return Response::json(['error' => 'No encryption key available'], 404);
-            }
-
-            return Response::make($lesson->encryption_key)
-                ->header('Content-Type', 'application/octet-stream');
-        }
-
-        return Response::json(['error' => 'Invalid request'], 400);
-    }
-
     public function review(Course $course, Request $request)
     {
         $user = Auth::user();
