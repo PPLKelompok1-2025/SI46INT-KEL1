@@ -39,7 +39,7 @@ import { format } from 'date-fns';
 import { Edit, Eye, Trash, User } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Course({ auth, course, reviews }) {
+export default function Course({ course, reviews }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
 
@@ -62,7 +62,7 @@ export default function Course({ auth, course, reviews }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title={`${course.title} - Reviews`} />
 
             <div className="sm:px-6 lg:px-8">

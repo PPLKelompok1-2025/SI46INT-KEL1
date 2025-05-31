@@ -21,7 +21,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
 
-export default function Edit({ auth, review }) {
+export default function Edit({ review }) {
     const { data, setData, put, processing, errors } = useForm({
         rating: review.rating,
         comment: review.comment,
@@ -34,7 +34,7 @@ export default function Edit({ auth, review }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="Edit Review" />
 
             <div className="sm:px-6 lg:px-8">

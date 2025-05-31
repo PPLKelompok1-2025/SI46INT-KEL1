@@ -38,7 +38,7 @@ import { format } from 'date-fns';
 import { AlertCircle, CheckCircle, Edit, Eye, Trash } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Reported({ auth, reviews }) {
+export default function Reported({ reviews }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState(null);
     const [approveDialogOpen, setApproveDialogOpen] = useState(false);
@@ -71,7 +71,7 @@ export default function Reported({ auth, reviews }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="Reported Reviews" />
 
             <div className="py-12">

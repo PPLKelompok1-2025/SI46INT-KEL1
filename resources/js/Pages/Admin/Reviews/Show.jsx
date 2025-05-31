@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { CheckCircle, Edit, MessageSquare, Trash } from 'lucide-react';
 import { useState } from 'react';
 
-export default function Show({ auth, review }) {
+export default function Show({ review }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [approveDialogOpen, setApproveDialogOpen] = useState(false);
 
@@ -57,7 +57,7 @@ export default function Show({ auth, review }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="Review Details" />
 
             <div className="sm:px-6 lg:px-8">
