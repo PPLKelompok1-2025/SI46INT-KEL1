@@ -17,8 +17,8 @@ import {
 import { Textarea } from '@/Components/ui/textarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { formatCurrency } from '@/lib/utils';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, DollarSign, Wallet } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Wallet } from 'lucide-react';
 
 export default function Withdraw({ availableEarnings, paymentMethods }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -71,11 +71,14 @@ export default function Withdraw({ availableEarnings, paymentMethods }) {
                                         Amount
                                     </label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <p className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                            Rp
+                                        </p>
                                         <Input
                                             id="amount"
                                             placeholder="Enter amount"
                                             className="pl-8"
+                                            type="number"
                                             value={data.amount}
                                             onChange={(e) =>
                                                 setData(
@@ -142,6 +145,37 @@ export default function Withdraw({ availableEarnings, paymentMethods }) {
                                         Select the payment method you want to
                                         use for this withdrawal
                                     </p>
+                                    {paymentMethods.length === 0 && (
+                                        <div className="mt-2 rounded-md bg-yellow-50 p-3">
+                                            <div className="flex">
+                                                <p className="text-sm text-yellow-800">
+                                                    You need to add a payment
+                                                    method before you can
+                                                    request a withdrawal.{' '}
+                                                    <Link
+                                                        href={route(
+                                                            'instructor.payment-methods.create',
+                                                        )}
+                                                        className="font-medium text-yellow-800 underline hover:text-yellow-900"
+                                                    >
+                                                        Add a payment method
+                                                    </Link>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {paymentMethods.length > 0 && (
+                                        <div className="mt-1 text-xs text-muted-foreground">
+                                            <Link
+                                                href={route(
+                                                    'instructor.payment-methods.index',
+                                                )}
+                                                className="text-primary hover:underline"
+                                            >
+                                                Manage payment methods
+                                            </Link>
+                                        </div>
+                                    )}
                                     {errors.payment_method_id && (
                                         <p className="text-sm text-destructive">
                                             {errors.payment_method_id}
@@ -179,7 +213,13 @@ export default function Withdraw({ availableEarnings, paymentMethods }) {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => reset()}
+                                        onClick={() =>
+                                            router.visit(
+                                                route(
+                                                    'instructor.earnings.index',
+                                                ),
+                                            )
+                                        }
                                     >
                                         Cancel
                                     </Button>

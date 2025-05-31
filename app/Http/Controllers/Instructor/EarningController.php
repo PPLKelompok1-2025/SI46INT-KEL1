@@ -31,14 +31,28 @@ class EarningController extends Controller
             ->where('status', 'completed')
             ->sum('instructor_amount');
 
+        // Add any direct instructor earnings not tied to a course
+        $directEarnings = Transaction::where('user_id', $instructor->id)
+            ->whereNull('course_id')
+            ->where('status', 'completed')
+            ->where('type', '!=', 'payout') // Exclude payouts
+            ->sum('instructor_amount');
+
+        $totalEarnings += $directEarnings;
+
         // Calculate pending earnings (not yet available for withdrawal)
         $pendingEarnings = Transaction::whereIn('course_id', $courseIds)
             ->where('status', 'completed')
             ->where('created_at', '>=', now()->subDays(30))
             ->sum('instructor_amount');
 
-        // Calculate available earnings
-        $availableEarnings = $totalEarnings - $pendingEarnings;
+        // Calculate withdrawals (both pending and approved/processed)
+        $allWithdrawals = WithdrawalRequest::where('user_id', $instructor->id)
+            ->whereIn('status', ['pending', 'approved', 'processed'])
+            ->sum('amount');
+
+        // Calculate actual available amount
+        $availableEarnings = $totalEarnings - $pendingEarnings - $allWithdrawals;
 
         // Get recent transactions
         $recentTransactions = Transaction::whereIn('course_id', $courseIds)
@@ -101,22 +115,28 @@ class EarningController extends Controller
             ->where('status', 'completed')
             ->sum('instructor_amount');
 
+        // Add any direct instructor earnings not tied to a course
+        $directEarnings = Transaction::where('user_id', $instructor->id)
+            ->whereNull('course_id')
+            ->where('status', 'completed')
+            ->where('type', '!=', 'payout') // Exclude payouts
+            ->sum('instructor_amount');
+
+        $totalEarnings += $directEarnings;
+
         // Calculate pending earnings (not yet available for withdrawal)
         $pendingEarnings = Transaction::whereIn('course_id', $courseIds)
             ->where('status', 'completed')
             ->where('created_at', '>=', now()->subDays(30))
             ->sum('instructor_amount');
 
-        // Calculate available earnings
-        $availableEarnings = $totalEarnings - $pendingEarnings;
-
-        // Get pending withdrawal requests
-        $pendingWithdrawals = WithdrawalRequest::where('user_id', $instructor->id)
-            ->where('status', 'pending')
+        // Calculate withdrawals (both pending and approved/processed)
+        $allWithdrawals = WithdrawalRequest::where('user_id', $instructor->id)
+            ->whereIn('status', ['pending', 'approved', 'processed'])
             ->sum('amount');
 
         // Calculate actual available amount
-        $actualAvailableAmount = $availableEarnings - $pendingWithdrawals;
+        $actualAvailableAmount = $totalEarnings - $pendingEarnings - $allWithdrawals;
 
         return Inertia::render('Instructor/Earnings/Withdraw', [
             'availableEarnings' => $actualAvailableAmount,
@@ -133,54 +153,74 @@ class EarningController extends Controller
     public function requestWithdrawal(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:50',
+            'amount' => 'required|numeric|min:50000',
             'payment_method_id' => 'required|exists:payment_methods,id',
             'notes' => 'nullable|string|max:500'
         ]);
 
         $instructor = Auth::user();
 
-        // Get all courses by this instructor
-        $courseIds = Course::where('user_id', $instructor->id)
-            ->pluck('id');
+        // Begin a database transaction
+        DB::beginTransaction();
 
-        // Calculate available earnings
-        $totalEarnings = Transaction::whereIn('course_id', $courseIds)
-            ->where('status', 'completed')
-            ->sum('instructor_amount');
+        try {
+            // Get all courses by this instructor
+            $courseIds = Course::where('user_id', $instructor->id)
+                ->pluck('id');
 
-        $pendingEarnings = Transaction::whereIn('course_id', $courseIds)
-            ->where('status', 'completed')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->sum('instructor_amount');
+            // Calculate total earnings
+            $totalEarnings = Transaction::whereIn('course_id', $courseIds)
+                ->where('status', 'completed')
+                ->sum('instructor_amount');
 
-        $availableEarnings = $totalEarnings - $pendingEarnings;
+            // Add any direct instructor earnings not tied to a course
+            $directEarnings = Transaction::where('user_id', $instructor->id)
+                ->whereNull('course_id')
+                ->where('status', 'completed')
+                ->where('type', '!=', 'payout') // Exclude payouts
+                ->sum('instructor_amount');
 
-        // Get pending withdrawal requests
-        $pendingWithdrawals = WithdrawalRequest::where('user_id', $instructor->id)
-            ->where('status', 'pending')
-            ->sum('amount');
+            $totalEarnings += $directEarnings;
 
-        $actualAvailableAmount = $availableEarnings - $pendingWithdrawals;
+            // Calculate pending earnings (not yet available for withdrawal)
+            $pendingEarnings = Transaction::whereIn('course_id', $courseIds)
+                ->where('status', 'completed')
+                ->where('created_at', '>=', now()->subDays(30))
+                ->sum('instructor_amount');
 
-        // Check if requested amount is available
-        if ($request->amount > $actualAvailableAmount) {
-            return back()->withErrors([
-                'amount' => 'The requested amount exceeds your available earnings.'
+            // Calculate withdrawals (both pending and processed)
+            $allWithdrawals = WithdrawalRequest::where('user_id', $instructor->id)
+                ->whereIn('status', ['pending', 'approved', 'processed'])
+                ->sum('amount');
+
+            // Calculate actual available amount
+            $availableEarnings = $totalEarnings - $pendingEarnings - $allWithdrawals;
+
+            // Check if requested amount is available
+            if ($request->amount > $availableEarnings) {
+                DB::rollBack();
+                return back()->withErrors([
+                    'amount' => 'The requested amount exceeds your available earnings.'
+                ]);
+            }
+
+            // Create withdrawal request
+            WithdrawalRequest::create([
+                'user_id' => $instructor->id,
+                'amount' => $request->amount,
+                'payment_method_id' => $request->payment_method_id,
+                'notes' => $request->notes,
+                'status' => 'pending'
             ]);
+
+            DB::commit();
+
+            return redirect()->route('instructor.earnings.index')
+                ->with('success', 'Withdrawal request submitted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error submitting withdrawal request: ' . $e->getMessage());
         }
-
-        // Create withdrawal request
-        WithdrawalRequest::create([
-            'user_id' => $instructor->id,
-            'amount' => $request->amount,
-            'payment_method_id' => $request->payment_method_id,
-            'notes' => $request->notes,
-            'status' => 'pending'
-        ]);
-
-        return redirect()->route('instructor.earnings.index')
-            ->with('success', 'Withdrawal request submitted successfully.');
     }
 
     /**

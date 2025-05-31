@@ -35,6 +35,8 @@ use App\Http\Controllers\PromoCodeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DonationController;
+use App\Http\Controllers\Admin\WithdrawalRequestController;
+use App\Http\Controllers\Instructor\PaymentMethodController;
 
 /*
 |--------------------------------------------------------------------------
@@ -136,6 +138,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Promo code management
         Route::resource('promo-codes', AdminPromoCodeController::class);
         Route::patch('/promo-codes/{promoCode}/toggle-active', [AdminPromoCodeController::class, 'toggleActive'])->name('promo-codes.toggle-active');
+
+        // Withdrawal requests management
+        Route::get('/withdrawal-requests', [WithdrawalRequestController::class, 'index'])->name('withdrawal-requests.index');
+        Route::get('/withdrawal-requests/{withdrawalRequest}', [WithdrawalRequestController::class, 'show'])->name('withdrawal-requests.show');
+        Route::patch('/withdrawal-requests/{withdrawalRequest}/approve', [WithdrawalRequestController::class, 'approve'])->name('withdrawal-requests.approve');
+        Route::patch('/withdrawal-requests/{withdrawalRequest}/reject', [WithdrawalRequestController::class, 'reject'])->name('withdrawal-requests.reject');
     });
 
     // Instructor routes
@@ -183,19 +191,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Quiz management
         Route::resource('lessons.quizzes', InstructorQuizController::class);
+        Route::post('lessons/{lesson}/quizzes/generate', [InstructorQuizController::class, 'generateQuiz'])->name('lessons.quizzes.generate');
         Route::resource('quizzes.questions', QuestionController::class);
 
         // Assignment management
         Route::resource('lessons.assignments', InstructorAssignmentController::class);
+        Route::get('/assignments/{assignment}/download-materials', [InstructorAssignmentController::class, 'downloadAssignmentMaterials'])->name('assignments.download-materials');
         Route::get('/assignments/submissions', [InstructorAssignmentController::class, 'allSubmissions'])->name('assignments.submissions.all');
         Route::get('/assignments/{assignment}/submissions', [InstructorAssignmentController::class, 'submissions'])->name('assignments.submissions');
         Route::patch('/assignments/submissions/{submission}/grade', [InstructorAssignmentController::class, 'gradeSubmission'])->name('assignments.submissions.grade');
+        Route::get('/assignments/submissions/{submission}/download', [InstructorAssignmentController::class, 'downloadSubmission'])->name('assignments.submissions.download');
 
         // Earnings routes
         Route::get('/earnings', [EarningController::class, 'index'])->name('earnings.index');
         Route::get('/earnings/withdraw', [EarningController::class, 'withdrawForm'])->name('earnings.withdraw');
         Route::post('/earnings/withdraw', [EarningController::class, 'requestWithdrawal'])->name('earnings.request-withdrawal');
         Route::get('/earnings/courses/{course}', [EarningController::class, 'courseEarnings'])->name('earnings.course');
+
+        // Payment methods management
+        Route::resource('payment-methods', PaymentMethodController::class);
+        Route::patch('/payment-methods/{paymentMethod}/set-default', [PaymentMethodController::class, 'setDefault'])->name('payment-methods.set-default');
     });
 
     // Student routes
@@ -207,7 +222,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/courses/{course:slug}', [StudentCourseController::class, 'show'])->name('courses.show');
         Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'enroll'])->name('courses.enroll');
         Route::get('/courses/{course}/learn', [StudentCourseController::class, 'learn'])->name('courses.learn');
-        Route::get('/courses/{course}/lessons/{lesson}', [StudentCourseController::class, 'lesson'])->name('courses.lessons.show');
         Route::post('/courses/{course}/complete', [EnrollmentController::class, 'complete'])->name('courses.complete');
         Route::post('/lessons/{lesson}/complete', [EnrollmentController::class, 'completeLesson'])->name('lessons.complete');
         Route::post('/courses/{course}/review', [StudentCourseController::class, 'review'])->name('courses.review');
@@ -231,10 +245,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/assignments/{assignment}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
         Route::post('/assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
         Route::get('/assignments/{assignment}/feedback', [StudentAssignmentController::class, 'feedback'])->name('assignments.feedback');
+        Route::get('/assignments/{assignment}/download-materials', [StudentAssignmentController::class, 'downloadAssignmentMaterials'])->name('assignments.download-materials');
+        Route::get('/assignments/submissions/{submission}/download', [StudentAssignmentController::class, 'downloadSubmission'])->name('assignments.submissions.download');
 
         // Certificates
         Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
         Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+        Route::get('/certificates/{certificate}/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
         Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
         // Wishlist routes
