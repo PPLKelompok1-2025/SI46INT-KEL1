@@ -54,6 +54,10 @@ export default function Checkout({ course, promoCodes = [], tax }) {
             } else {
                 const response = await axios.post(
                     route('payment.midtrans.token', course.id),
+                    {
+                        promoCode: validPromo ? validPromo.code : null,
+                        finalAmount: checkoutDetails.total,
+                    },
                 );
 
                 if (response.data.success && response.data.snap_token) {
@@ -69,7 +73,6 @@ export default function Checkout({ course, promoCodes = [], tax }) {
                     try {
                         window.snap.pay(response.data.snap_token, {
                             onSuccess: (result) => {
-                                console.log('Payment success:', result);
                                 router.visit(
                                     route('payment.midtrans.callback', {
                                         order_id: response.data.order_id,
@@ -81,7 +84,6 @@ export default function Checkout({ course, promoCodes = [], tax }) {
                                 );
                             },
                             onPending: (result) => {
-                                console.log('Payment pending:', result);
                                 router.visit(
                                     route('payment.midtrans.callback', {
                                         order_id: response.data.order_id,
@@ -141,7 +143,7 @@ export default function Checkout({ course, promoCodes = [], tax }) {
             toast.error(errorMessage);
             setLoading(false);
         }
-    }, [auth, course]);
+    }, [auth, course, validPromo, checkoutDetails.total]);
 
     const validatePromoCode = () => {
         if (!promoCodeInput) {
@@ -158,7 +160,11 @@ export default function Checkout({ course, promoCodes = [], tax }) {
             })
             .then((response) => {
                 if (response.data.success) {
-                    setValidPromo(response.data);
+                    const promoData = {
+                        ...response.data,
+                        code: response.data.promoCode || promoCodeInput,
+                    };
+                    setValidPromo(promoData);
 
                     const subtotal = course.price;
                     const discount = response.data.discountAmount;
@@ -325,7 +331,7 @@ export default function Checkout({ course, promoCodes = [], tax }) {
                                                         {promo.code}
                                                     </span>
                                                     <Button
-                                                        variant="ghost"
+                                                        className="bg-green-500"
                                                         size="sm"
                                                         onClick={() => {
                                                             setPromoCodeInput(
