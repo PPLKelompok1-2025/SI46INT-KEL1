@@ -290,7 +290,7 @@ export default function Index({
 
                                 <CardFooter className="flex items-center justify-between pt-2">
                                     <div className="text-lg font-bold">
-                                        {course.price === 0
+                                        {parseFloat(course.price) === 0
                                             ? 'Free'
                                             : `${formatCurrency(course.price)}`}
                                     </div>
