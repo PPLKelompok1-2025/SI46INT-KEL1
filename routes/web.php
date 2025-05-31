@@ -60,62 +60,39 @@ Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('c
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 
-// Authenticated user routes
-Route::middleware(['auth'])->group(function () {
-    // Profile routes
+// Search routes
+Route::get('/search', [SearchController::class, 'index'])->name('search');
+
+// Authentication routes (already provided by Breeze)
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Common authenticated routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
 
-    // Enrollment routes
-    Route::get('/enrollments', [EnrollmentController::class, 'index'])->name('enrollments.index');
-    Route::post('/courses/{course}/enroll', [EnrollmentController::class, 'store'])->name('enrollments.store');
-    Route::get('/enrollments/{enrollment}', [EnrollmentController::class, 'show'])->name('enrollments.show');
+    // Payment routes
+    Route::prefix('payment')->name('payment.')->group(function () {
+        // Route::post('/process', [PaymentController::class, 'process'])->name('process');
+        // Route::get('/success', [PaymentController::class, 'success'])->name('success');
+        // Route::get('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
 
-    // Transaction routes
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('/courses/{course}/checkout', [TransactionController::class, 'create'])->name('transactions.create');
-    Route::post('/courses/{course}/checkout', [TransactionController::class, 'store'])->name('transactions.store');
+        Route::get('/checkout/{course}', [CourseController::class, 'checkout'])->name('checkout');
 
-    // Review routes
-    Route::get('/courses/{course}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
-    Route::get('/courses/{course}/reviews/create', [ReviewController::class, 'create'])->name('reviews.create');
-    Route::post('/courses/{course}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
-    Route::get('/courses/{course}/reviews/{review}/edit', [ReviewController::class, 'edit'])->name('reviews.edit');
-    Route::put('/courses/{course}/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
-    Route::delete('/courses/{course}/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+        // Midtrans payment routes
+        Route::post('/validate-promo', [PromoCodeController::class, 'validatePromoCode'])->name('validate-promo');
 
-    // Lesson progress routes
-    Route::post('/lessons/{lesson}/complete', [LessonProgressController::class, 'markAsCompleted'])->name('lessons.complete');
-    Route::post('/lessons/{lesson}/watch-time', [LessonProgressController::class, 'updateWatchTime'])->name('lessons.watch-time');
-    Route::get('/courses/{course}/progress', [LessonProgressController::class, 'getCourseProgress'])->name('courses.progress');
+        Route::post('/midtrans/token/{course}', [MidtransController::class, 'getSnapToken'])->name('midtrans.token');
+        Route::post('/midtrans/notification', [MidtransController::class, 'handleNotification'])->name('midtrans.notification');
+        Route::get('/midtrans/callback', [MidtransController::class, 'handleCallback'])->name('midtrans.callback');
+        Route::post('/donation/{course}', [DonationController::class, 'process'])->name('donation');
 
-    // Instructor routes
-    Route::middleware(['can:create,App\\Models\\Course'])->group(function () {
-        Route::get('/instructor/courses', [CourseController::class, 'myCourses'])->name('instructor.courses');
-        Route::get('/instructor/courses/create', [CourseController::class, 'create'])->name('courses.create');
-        Route::post('/instructor/courses', [CourseController::class, 'store'])->name('courses.store');
-        Route::get('/instructor/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
-        Route::put('/instructor/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
-        Route::delete('/instructor/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+        // Donation routes
+        Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
+        Route::post('/donation/{course}/process', [DonationController::class, 'process'])->name('donation.process');
+        Route::get('/donation/callback', [DonationController::class, 'handleCallback'])->name('donation.callback');
+        Route::post('/donation/notification', [DonationController::class, 'handleNotification'])->name('donation.notification');
     });
-});
-
-// Instructor routes
-Route::middleware(['role:instructor'])->prefix('instructor')->name('instructor.')->group(function () {
-    // Lesson routes - nested under courses
-    Route::get('courses/{course}/lessons', [LessonController::class, 'index'])->name('courses.lessons.index');
-    Route::get('courses/{course}/lessons/create', [LessonController::class, 'create'])->name('courses.lessons.create');
-    Route::get('courses/{course}/lessons/{lesson}/edit', [LessonController::class, 'edit'])->name('courses.lessons.edit');
-    Route::delete('courses/{course}/lessons/{lesson}', [LessonController::class, 'destroy'])->name('courses.lessons.destroy');
-    Route::post('courses/{course}/lessons', [LessonController::class, 'store'])->name('courses.lessons.store');
-    Route::get('courses/{course}/lessons/{lesson}', [LessonController::class, 'show'])->name('courses.lessons.show');
-
-    // Video handling routes
-    Route::post('lessons/videos/upload', [LessonController::class, 'uploadTemporaryVideo'])->name('lessons.videos.upload');
-    Route::post('lessons/videos/delete', [LessonController::class, 'deleteTemporaryVideo'])->name('lessons.videos.delete');
-    Route::get('lessons/{lesson}/video', [LessonController::class, 'streamVideo'])->name('lessons.videos.stream');
-});
 
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -296,7 +273,3 @@ Route::get('/video/playlist/{playlist}', [VideoController::class, 'servePlaylist
 Route::get('/video/key/{key}', [VideoController::class, 'serveKey'])->name('video.key');
 
 require __DIR__.'/auth.php';
-require __DIR__.'/admin.php';
-require __DIR__.'/discussion.php';
-require __DIR__.'/certificate.php';
-require __DIR__.'/wishlist.php';

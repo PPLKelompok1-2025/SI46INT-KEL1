@@ -46,7 +46,7 @@ class LessonController extends Controller
      * @param  \App\Models\Course  $course
      * @return \Inertia\Response
      */
-    public function create(Course $course)
+    public function create(Request $request, Course $course)
     {
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
@@ -57,7 +57,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Create', [
             'course' => $course,
-            'nextOrder' => $maxOrder + 1
+            'nextOrder' => $maxOrder + 1,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -98,14 +99,11 @@ class LessonController extends Controller
         if (!empty($validated['temp_video'])) {
             $tempPath = $validated['temp_video'];
 
-            $encryptionKey = Str::random(32);
-
-            $videoPath = $this->processVideo($tempPath, $validated['slug'], $encryptionKey);
+            $videoPath = $this->processVideo($tempPath, $validated['slug']);
 
             if ($videoPath) {
                 $validated['video_path'] = $videoPath;
                 $validated['video_disk'] = 'encrypted_videos';
-                $validated['encryption_key'] = $encryptionKey;
             }
 
             unset($validated['temp_video']);
@@ -120,13 +118,12 @@ class LessonController extends Controller
     /**
      * Display the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function show(Lesson $lesson)
+    public function show(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to view this lesson');
@@ -141,13 +138,12 @@ class LessonController extends Controller
     /**
      * Show the form for editing the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function edit(Lesson $lesson)
+    public function edit(Request $request, Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to edit this lesson');
@@ -155,7 +151,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Edit', [
             'lesson' => $lesson,
-            'course' => $course
+            'course' => $course,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -163,13 +160,12 @@ class LessonController extends Controller
      * Update the specified lesson in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Lesson $lesson)
+    public function update(Request $request, Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to update this lesson');
@@ -200,14 +196,11 @@ class LessonController extends Controller
 
             $tempPath = $validated['temp_video'];
 
-            $encryptionKey = Str::random(32);
-
-            $videoPath = $this->processVideo($tempPath, $validated['slug'], $encryptionKey);
+            $videoPath = $this->processVideo($tempPath, $validated['slug']);
 
             if ($videoPath) {
                 $validated['video_path'] = $videoPath;
                 $validated['video_disk'] = 'encrypted_videos';
-                $validated['encryption_key'] = $encryptionKey;
                 $validated['video_url'] = null;
             }
 
@@ -223,13 +216,12 @@ class LessonController extends Controller
     /**
      * Remove the specified lesson from storage.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Lesson $lesson)
+    public function destroy(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to delete this lesson');
@@ -277,7 +269,8 @@ class LessonController extends Controller
             }
         }
 
-        return response()->json(['success' => true]);
+        return redirect()->route('instructor.courses.lessons.index', $course->id)
+            ->with('success', 'Lessons reordered successfully');
     }
 
     /**
@@ -332,44 +325,30 @@ class LessonController extends Controller
      *
      * @param  string  $tempPath
      * @param  string  $slug
-     * @param  string  $encryptionKey
      * @return string|null The path to the processed video directory
      */
-    private function processVideo($tempPath, $slug, $encryptionKey)
+    private function processVideo($tempPath, $slug)
     {
         try {
-            $videoDirectory = 'videos\\' . Str::slug($slug) . '_' . Str::random(8);
-            Storage::disk('encrypted_videos')->makeDirectory($videoDirectory);
-
-            $keyPath = 'keys/' . Str::slug($slug) . '_' . Str::random(8) . '.key';
-            Storage::disk('private')->put($keyPath, $encryptionKey);
-
-            $fullTempPath = Storage::disk('local')->path($tempPath);
-            // $duration = FFMpeg::open($fullTempPath)->getDurationInSeconds();
-
-            $lowBitrate = (new X264)->setKiloBitrate(500);
-            $midBitrate = (new X264)->setKiloBitrate(1000);
-            $highBitrate = (new X264)->setKiloBitrate(1500);
+            $lowBitrate = (new X264('aac'))->setKiloBitrate(500);
+            $highBitrate = (new X264('aac'))->setKiloBitrate(1000);
 
             FFMpeg::fromDisk('local')
                 ->open($tempPath)
                 ->exportForHLS()
-                ->withEncryptionKey(Storage::disk('private')->path($keyPath))
+                ->withRotatingEncryptionKey(function ($filename, $contents) {
+                    Storage::disk('private')->put("keys/{$filename}", $contents);
+                })
                 ->addFormat($lowBitrate, function($filters) {
                     $filters->resize(640, 360);
                 })
-                ->addFormat($midBitrate, function($filters) {
-                    $filters->resize(1280, 720);
-                })
-                ->addFormat($highBitrate, function($filters) {
-                    $filters->resize(1920, 1080);
-                })
+                ->addFormat($highBitrate)
                 ->toDisk('encrypted_videos')
-                ->save($videoDirectory . '/playlist.m3u8');
+                ->save($slug . '.m3u8');
 
             Storage::disk('local')->delete($tempPath);
 
-            return $videoDirectory . '/playlist.m3u8';
+            return $slug . '.m3u8';
         } catch (\Exception $e) {
             Log::error('Video processing error: ' . $e->getMessage());
             return null;
@@ -398,14 +377,16 @@ class LessonController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Lesson  $lesson
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
+     * @param  string|null  $path
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
-    public function streamVideo(Request $request, Lesson $lesson)
+    public function streamVideo(Request $request, Lesson $lesson, $path = null)
     {
         $course = $lesson->course;
         $user = Auth::user();
 
-        if ($course->user_id !== $user->id) {
+        // Authorization check - only allow course owner, enrolled students, or free lessons
+        if ($course->user_id != $user->id) {
             $isEnrolled = $course->enrollments()
                 ->where('user_id', $user->id)
                 ->where('status', 'active')
@@ -420,26 +401,17 @@ class LessonController extends Controller
             return Response::json(['error' => 'No video available'], 404);
         }
 
-        if ($request->has('playlist')) {
-            $path = Storage::disk($lesson->video_disk)->path($lesson->video_path);
-            return Response::file($path);
-        }
+        // Get filename from path
+        $filename = basename($lesson->video_path);
 
-        if ($request->has('segment')) {
-            $segmentPath = dirname($lesson->video_path) . '/' . $request->segment;
-            $path = Storage::disk($lesson->video_disk)->path($segmentPath);
-            return Response::file($path);
-        }
-
+        // After authorization checks, redirect to appropriate VideoController method
         if ($request->has('key')) {
-            if (!$lesson->encryption_key) {
-                return Response::json(['error' => 'No encryption key available'], 404);
-            }
-
-            return Response::make($lesson->encryption_key)
-                ->header('Content-Type', 'application/octet-stream');
+            // Extract key filename from the request
+            $keyFilename = $request->query('key');
+            return app()->make('App\Http\Controllers\VideoController')->serveKey($keyFilename);
+        } else {
+            // Use the VideoController to serve the playlist
+            return app()->make('App\Http\Controllers\VideoController')->servePlaylist($filename);
         }
-
-        return Response::json(['error' => 'Invalid request'], 400);
     }
 }
