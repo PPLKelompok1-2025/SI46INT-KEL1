@@ -91,7 +91,7 @@ class MidtransController extends Controller
                 ];
             }
 
-            if ($course->price === 0 || $finalAmount === 0) {
+            if ((float)$course->price == 0 || (float)$finalAmount == 0) {
                 Enrollment::create([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
