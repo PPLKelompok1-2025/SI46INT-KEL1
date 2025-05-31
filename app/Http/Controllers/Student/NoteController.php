@@ -28,7 +28,7 @@ class NoteController extends Controller
             ->orderBy('updated_at', 'desc');
 
         $paginatedNotes = $query->paginate($perPage);
-        
+
         $pagination = $paginatedNotes->toArray();
         $isNextPageExists = $pagination['current_page'] < $pagination['last_page'];
 
@@ -89,8 +89,7 @@ class NoteController extends Controller
         $isEnrolled = $user->enrollments()->where('course_id', $course->id)->exists();
 
         if (!$isEnrolled) {
-            return redirect()->route('student.courses.show', $course->slug)
-                ->with('error', 'You must be enrolled in this course to create notes.');
+            return redirect()->back()->with('error', 'You must be enrolled in this course to create notes.');
         }
 
         // Check if a note already exists
@@ -103,19 +102,17 @@ class NoteController extends Controller
                 'content' => $request->content
             ]);
 
-            return redirect()->route('student.notes.index')
-                ->with('success', 'Note updated successfully.');
+            return redirect()->back()->with('success', 'Note updated successfully.');
         }
 
         // Create a new note
-        Note::create([
+        $newNote = Note::create([
             'user_id' => $user->id,
             'course_id' => $course->id,
             'content' => $request->content
         ]);
 
-        return redirect()->route('student.notes.index')
-            ->with('success', 'Note created successfully.');
+        return redirect()->back()->with('success', 'Note created successfully.')->with('new_note_id', $newNote->id);
     }
 
     /**
@@ -158,16 +155,14 @@ class NoteController extends Controller
 
         // Check if the note belongs to the user
         if ($note->user_id !== $user->id) {
-            return redirect()->route('student.notes.index')
-                ->with('error', 'You do not have permission to edit this note.');
+            return redirect()->back()->with('error', 'You do not have permission to edit this note.');
         }
 
         $note->update([
             'content' => $request->content
         ]);
 
-        return redirect()->route('student.notes.index')
-            ->with('success', 'Note updated successfully.');
+        return redirect()->back()->with('success', 'Note updated successfully.');
     }
 
     /**
