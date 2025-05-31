@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
+use App\Models\Note;
 
 class CourseController extends Controller
 {
@@ -40,10 +41,24 @@ class CourseController extends Controller
             ->map(function ($enrollment) {
                 $course = $enrollment->course;
 
+                // Get actual completed lessons count
+                $completedLessonsCount = $enrollment->completedLessons()->count();
+                $totalLessonsCount = $course->lessons_count ?: 0;
+
+                // Calculate progress percentage
+                $progressPercentage = $totalLessonsCount > 0
+                    ? round(($completedLessonsCount / $totalLessonsCount) * 100)
+                    : 0;
+
+                // Update enrollment progress if needed
+                if ($enrollment->progress != $progressPercentage) {
+                    $enrollment->updateProgress($progressPercentage);
+                }
+
                 $course->progress = [
-                    'percentage' => $enrollment->progress,
-                    'completed_lessons' => $enrollment->completedLessons()->count(),
-                    'total_lessons' => $course->lessons_count,
+                    'percentage' => $progressPercentage,
+                    'completed_lessons' => $completedLessonsCount,
+                    'total_lessons' => $totalLessonsCount,
                     'last_accessed' => $enrollment->updated_at,
                 ];
 
@@ -100,8 +115,12 @@ class CourseController extends Controller
             $totalLessonsCount = $course->lessons->count();
 
             $progressPercentage = $totalLessonsCount > 0
-                ? round(($completedLessonsCount / $totalLessonsCount) * 100, 2)
+                ? round(($completedLessonsCount / $totalLessonsCount) * 100)
                 : 0;
+
+            if ($enrollment->progress != $progressPercentage) {
+                $enrollment->updateProgress($progressPercentage);
+            }
 
             $progress = [
                 'percentage' => $progressPercentage,
@@ -173,9 +192,10 @@ class CourseController extends Controller
      * Display the course learning interface.
      *
      * @param  \App\Models\Course  $course
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response|\Illuminate\Http\RedirectResponse
      */
-    public function learn(Course $course)
+    public function learn(Request $request, Course $course)
     {
         $user = Auth::user();
 
@@ -189,7 +209,13 @@ class CourseController extends Controller
         }
 
         $course->load(['lessons' => function ($query) {
-            $query->orderBy('order');
+            $query->orderBy('order')
+                  ->with([
+                      'assignments',
+                      'quizzes' => function ($q) {
+                          $q->select('id', 'lesson_id', 'title');
+                      },
+                  ]);
         }]);
 
         $totalDuration = $course->lessons->sum('duration');
@@ -200,85 +226,49 @@ class CourseController extends Controller
         $totalLessonsCount = $course->lessons->count();
 
         $progressPercentage = $totalLessonsCount > 0
-            ? round(($completedLessonsCount / $totalLessonsCount) * 100, 2)
+            ? round(($completedLessonsCount / $totalLessonsCount) * 100)
             : 0;
 
-        // $enrollment->update([
-        //     'last_accessed_at' => now()
-        // ]);
+        if ($enrollment->progress != $progressPercentage) {
+            $enrollment->updateProgress($progressPercentage);
+        }
+
+        $enrollment->touch();
 
         $nextLesson = $course->lessons->first(function ($lesson) use ($completedLessons) {
             return !in_array($lesson->id, $completedLessons);
         }) ?? $course->lessons->first();
 
+        // Get active lesson from URL parameter if it exists
+        $activeLessonId = $request->query('lesson');
+        $activeLesson = null;
+
+        if ($activeLessonId) {
+            $activeLesson = $course->lessons->firstWhere('id', $activeLessonId);
+        }
+
+        // If no active lesson was found from URL or it's invalid, use the next lesson
+        if (!$activeLesson) {
+            $activeLesson = $nextLesson;
+        }
+
+        // Load existing note if any
+        $note = Note::where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->first();
+
         return Inertia::render('Student/Courses/Learn', [
             'course' => $course,
             'completedLessons' => $completedLessons,
             'nextLesson' => $nextLesson,
+            'activeLesson' => $activeLesson,
             'progress' => [
                 'percentage' => $progressPercentage,
                 'completed_lessons' => $completedLessonsCount,
                 'total_lessons' => $totalLessonsCount,
                 'last_accessed' => $enrollment->updated_at,
-            ]
-        ]);
-    }
-
-    /**
-     * Display a specific lesson within a course.
-     *
-     * @param  \App\Models\Course  $course
-     * @param  \App\Models\Lesson  $lesson
-     * @return \Inertia\Response|\Illuminate\Http\RedirectResponse
-     */
-    public function lesson(Course $course, Lesson $lesson)
-    {
-        $user = Auth::user();
-
-        $enrollment = Enrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->first();
-
-        if (!$enrollment) {
-            return redirect()->route('student.courses.show', $course->slug)
-                ->with('error', 'You must be enrolled in this course to access the lessons.');
-        }
-
-        if ($lesson->course_id !== $course->id) {
-            return redirect()->route('student.courses.learn', $course->slug)
-                ->with('error', 'The requested lesson does not belong to this course.');
-        }
-
-        $course->load(['lessons' => function ($query) {
-            $query->orderBy('order');
-        }]);
-        $lesson->load(['quizzes', 'assignments']);
-
-        $completedLessons = $enrollment->completedLessons()->pluck('lesson_id')->toArray();
-
-        $isCompleted = in_array($lesson->id, $completedLessons);
-
-        $lessonIds = $course->lessons->pluck('id')->toArray();
-        $currentIndex = array_search($lesson->id, $lessonIds);
-        $previousLesson = $currentIndex > 0 ? $course->lessons[$currentIndex - 1] : null;
-        $nextLesson = $currentIndex < count($lessonIds) - 1 ? $course->lessons[$currentIndex + 1] : null;
-
-        // $enrollment->update([
-        //     'last_accessed_at' => now()
-        // ]);
-
-        return Inertia::render('Student/Courses/Lesson', [
-            'course' => $course,
-            'lesson' => $lesson,
-            'isCompleted' => $isCompleted,
-            'completedLessons' => $completedLessons,
-            'previousLesson' => $previousLesson,
-            'nextLesson' => $nextLesson,
-            'progress' => [
-                'percentage' => $enrollment->progress_percentage,
-                'completed_lessons' => count($completedLessons),
-                'total_lessons' => $course->lessons->count(),
-            ]
+            ],
+            'note' => $note,
         ]);
     }
 
@@ -335,59 +325,6 @@ class CourseController extends Controller
         $existingWishlist->delete();
 
         return redirect()->back()->with('success', 'Course removed from wishlist');
-    }
-
-    /**
-     * Stream encrypted video for students.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Lesson  $lesson
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\Response
-     */
-    public function streamVideo(Request $request, Lesson $lesson)
-    {
-        $course = $lesson->course;
-        $user = Auth::user();
-
-        // Check if user is enrolled in the course or if the lesson is free
-        $isEnrolled = $course->enrollments()
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->exists();
-
-        if (!$isEnrolled && !$lesson->is_free) {
-            return Response::json(['error' => 'Unauthorized access. You must be enrolled in this course to access this video.'], 403);
-        }
-
-        if (!$lesson->hasEncryptedVideo()) {
-            return Response::json(['error' => 'No video available'], 404);
-        }
-
-        // For .m3u8 playlist file
-        if ($request->has('playlist')) {
-            $path = Storage::disk($lesson->video_disk)->path($lesson->video_path);
-            return Response::file($path);
-        }
-
-        // For .ts segment files
-        if ($request->has('segment')) {
-            $segmentPath = dirname($lesson->video_path) . '/' . $request->segment;
-            $path = Storage::disk($lesson->video_disk)->path($segmentPath);
-            return Response::file($path);
-        }
-
-        // For .key file
-        if ($request->has('key')) {
-            // Ensure this is authenticated and authorized - we already checked above
-            if (!$lesson->encryption_key) {
-                return Response::json(['error' => 'No encryption key available'], 404);
-            }
-
-            return Response::make($lesson->encryption_key)
-                ->header('Content-Type', 'application/octet-stream');
-        }
-
-        return Response::json(['error' => 'Invalid request'], 400);
     }
 
     public function review(Course $course, Request $request)

@@ -20,7 +20,7 @@ import {
     Trash2,
     Video,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export default function Show({ lesson, course }) {
     const videoPlayerRef = useRef(null);
@@ -45,24 +45,7 @@ export default function Show({ lesson, course }) {
         }
     };
 
-    useEffect(() => {
-        // Initialize video player if there's an encrypted video
-        if (lesson.video_path && videoPlayerRef.current) {
-            // Check if any HLS player script is already loaded
-            if (!window.Hls) {
-                // Load HLS.js script
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-                script.async = true;
-                script.onload = initializeVideoPlayer;
-                document.body.appendChild(script);
-            } else {
-                initializeVideoPlayer();
-            }
-        }
-    }, [lesson.video_path]);
-
-    const initializeVideoPlayer = () => {
+    const initializeVideoPlayer = useCallback(() => {
         const videoElement = videoPlayerRef.current;
         if (!videoElement) return;
 
@@ -116,7 +99,24 @@ export default function Show({ lesson, course }) {
         } else {
             console.error('HLS is not supported in this browser');
         }
-    };
+    }, [lesson.id]);
+
+    useEffect(() => {
+        // Initialize video player if there's an encrypted video
+        if (lesson.video_path && videoPlayerRef.current) {
+            // Check if any HLS player script is already loaded
+            if (!window.Hls) {
+                // Load HLS.js script
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+                script.async = true;
+                script.onload = initializeVideoPlayer;
+                document.body.appendChild(script);
+            } else {
+                initializeVideoPlayer();
+            }
+        }
+    }, [lesson.video_path, initializeVideoPlayer]);
 
     return (
         <AuthenticatedLayout>
@@ -140,6 +140,17 @@ export default function Show({ lesson, course }) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* <Button variant="outline" asChild>
+                            <Link
+                                href={route(
+                                    'instructor.lessons.assignments.index',
+                                    lesson.id,
+                                )}
+                            >
+                                <ListChecks className="mr-2 h-4 w-4" />
+                                Assignments
+                            </Link>
+                        </Button> */}
                         <Button
                             variant="outline"
                             onClick={handleDelete}
@@ -371,10 +382,10 @@ export default function Show({ lesson, course }) {
                         <CardContent>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <Link
-                                    // href={route(
-                                    //     'lessons.quizzes.index',
-                                    //     lesson.id,
-                                    // )}
+                                    href={route(
+                                        'instructor.lessons.quizzes.index',
+                                        lesson.id,
+                                    )}
                                     className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary hover:bg-muted/50"
                                 >
                                     <ListChecks className="h-5 w-5" />
@@ -387,10 +398,10 @@ export default function Show({ lesson, course }) {
                                 </Link>
 
                                 <Link
-                                    // href={route(
-                                    //     'lessons.assignments.index',
-                                    //     lesson.id,
-                                    // )}
+                                    href={route(
+                                        'instructor.lessons.assignments.index',
+                                        lesson.id,
+                                    )}
                                     className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary hover:bg-muted/50"
                                 >
                                     <FileText className="h-5 w-5" />

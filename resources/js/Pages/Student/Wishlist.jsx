@@ -10,6 +10,7 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { formatCurrency } from '@/lib/utils';
 import { Head, Link, useForm, WhenVisible } from '@inertiajs/react';
 import { BookOpen, Heart } from 'lucide-react';
 
@@ -93,7 +94,7 @@ export default function Wishlist({
                                             <div className="flex items-center">
                                                 <p className="text-lg font-bold">
                                                     {course.price > 0
-                                                        ? `$${course.price}`
+                                                        ? `${formatCurrency(course.price)}`
                                                         : 'Free'}
                                                 </p>
                                                 {course.original_price >
