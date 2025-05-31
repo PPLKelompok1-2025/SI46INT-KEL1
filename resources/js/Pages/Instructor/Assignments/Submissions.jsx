@@ -28,7 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Textarea } from '@/Components/ui/textarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     CalendarDays,
     CheckCircle,
@@ -41,8 +41,12 @@ import {
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-export default function Submissions({ assignment, submissions }) {
-    const [activeTab, setActiveTab] = useState('all');
+export default function Submissions({
+    assignment,
+    submissions,
+    activeTab: initialActiveTab,
+}) {
+    const [activeTab, setActiveTab] = useState(initialActiveTab || 'all');
     const [selectedSubmission, setSelectedSubmission] = useState(null);
     const [isGradingOpen, setIsGradingOpen] = useState(false);
 
@@ -86,6 +90,15 @@ export default function Submissions({ assignment, submissions }) {
                     toast.error('Failed to grade submission');
                 },
             },
+        );
+    };
+
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        router.get(
+            route('instructor.assignments.submissions', assignment.id),
+            { tab: newTab },
+            { preserveState: true, replace: true },
         );
     };
 
@@ -169,7 +182,7 @@ export default function Submissions({ assignment, submissions }) {
                 <Tabs
                     defaultValue="all"
                     value={activeTab}
-                    onValueChange={setActiveTab}
+                    onValueChange={handleTabChange}
                     className="space-y-4"
                 >
                     <div className="flex items-center justify-between">
@@ -290,10 +303,10 @@ export default function Submissions({ assignment, submissions }) {
                                                                         asChild
                                                                     >
                                                                         <a
-                                                                            href={`/storage/${submission.file_path}`}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            download
+                                                                            href={route(
+                                                                                'instructor.assignments.submissions.download',
+                                                                                submission.id,
+                                                                            )}
                                                                         >
                                                                             <Download className="h-4 w-4" />
                                                                         </a>
@@ -407,10 +420,14 @@ export default function Submissions({ assignment, submissions }) {
                                                                         asChild
                                                                     >
                                                                         <a
-                                                                            href={`/storage/${submission.file_path}`}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            download
+                                                                            href={route(
+                                                                                'instructor.assignments.submissions.download',
+                                                                                submission.id,
+                                                                            )}
+                                                                            // href={`/storage/${submission.file_path}`}
+                                                                            // target="_blank"
+                                                                            // rel="noreferrer"
+                                                                            // download
                                                                         >
                                                                             <Download className="h-4 w-4" />
                                                                         </a>
@@ -521,10 +538,14 @@ export default function Submissions({ assignment, submissions }) {
                                                                         asChild
                                                                     >
                                                                         <a
-                                                                            href={`/storage/${submission.file_path}`}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            download
+                                                                            href={route(
+                                                                                'instructor.assignments.submissions.download',
+                                                                                submission.id,
+                                                                            )}
+                                                                            // href={`/storage/${submission.file_path}`}
+                                                                            // target="_blank"
+                                                                            // rel="noreferrer"
+                                                                            // download
                                                                         >
                                                                             <Download className="h-4 w-4" />
                                                                         </a>
@@ -593,9 +614,13 @@ export default function Submissions({ assignment, submissions }) {
                                         <div className="flex items-center gap-2">
                                             <FileText className="h-4 w-4" />
                                             <a
-                                                href={`/storage/${selectedSubmission.file_path}`}
-                                                target="_blank"
-                                                rel="noreferrer"
+                                                href={route(
+                                                    'instructor.assignments.submissions.download',
+                                                    selectedSubmission.id,
+                                                )}
+                                                // href={`/storage/${selectedSubmission.file_path}`}
+                                                // target="_blank"
+                                                // rel="noreferrer"
                                                 className="text-sm text-primary hover:underline"
                                             >
                                                 View/Download Submission File
