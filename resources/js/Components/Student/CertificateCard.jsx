@@ -32,18 +32,28 @@ export default function CertificateCard({ certificate, userName }) {
             </CardContent>
             <CardFooter className="flex justify-between">
                 <Button variant="outline" size="sm" asChild>
-                    <Link href={`/student/certificates/${certificate.id}`}>
+                    <Link
+                        href={route(
+                            'student.certificates.show',
+                            certificate.id,
+                        )}
+                    >
                         <ExternalLink className="mr-2 h-4 w-4" />
                         View
                     </Link>
                 </Button>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link
-                        href={`/student/certificates/${certificate.id}/download`}
+                    <a
+                        href={route(
+                            'student.certificates.download',
+                            certificate.id,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
                     >
                         <Download className="mr-2 h-4 w-4" />
                         Download
-                    </Link>
+                    </a>
                 </Button>
             </CardFooter>
         </Card>

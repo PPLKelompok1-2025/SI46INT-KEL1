@@ -44,7 +44,7 @@ class LessonController extends Controller
      * @param  \App\Models\Course  $course
      * @return \Inertia\Response
      */
-    public function create(Course $course)
+    public function create(Request $request, Course $course)
     {
         Gate::authorize('update', $course);
 
@@ -52,7 +52,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Create', [
             'course' => $course,
-            'nextOrder' => $maxOrder + 1
+            'nextOrder' => $maxOrder + 1,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -93,7 +94,6 @@ class LessonController extends Controller
             if ($videoPath) {
                 $validated['video_path'] = $videoPath;
                 $validated['video_disk'] = 'encrypted_videos';
-                $validated['encryption_key'] = $encryptionKey;
             }
             unset($validated['temp_video']);
         }
@@ -107,6 +107,7 @@ class LessonController extends Controller
     /**
      * Display the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
@@ -126,10 +127,11 @@ class LessonController extends Controller
     /**
      * Show the form for editing the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function edit(Lesson $lesson)
+    public function edit(Request $request, Course $course, Lesson $lesson)
     {
         Gate::authorize('update', $lesson);
         if ($lesson->course_id !== $course->id) {
@@ -138,7 +140,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Edit', [
             'lesson' => $lesson,
-            'course' => $course
+            'course' => $course,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -146,10 +149,11 @@ class LessonController extends Controller
      * Update the specified lesson in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Lesson $lesson)
+    public function update(Request $request, Course $course, Lesson $lesson)
     {
         Gate::authorize('update', $lesson);
         if ($lesson->course_id !== $course->id) {
@@ -183,7 +187,6 @@ class LessonController extends Controller
             if ($videoPath) {
                 $validated['video_path'] = $videoPath;
                 $validated['video_disk'] = 'encrypted_videos';
-                $validated['encryption_key'] = $encryptionKey;
                 $validated['video_url'] = null;
             }
             unset($validated['temp_video']);
@@ -204,6 +207,7 @@ class LessonController extends Controller
     /**
      * Remove the specified lesson from storage.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -308,10 +312,9 @@ class LessonController extends Controller
      *
      * @param  string  $tempPath
      * @param  string  $slug
-     * @param  string  $encryptionKey
      * @return string|null The path to the processed video directory
      */
-    private function processVideo($tempPath, $slug, $encryptionKey)
+    private function processVideo($tempPath, $slug)
     {
         $disk = 'encrypted_videos';
         $filenameBase = "lessons/{$slug}/" . Str::random(40);

@@ -12,6 +12,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/users', [AdminController::class, 'users'])->name('users.index');
     Route::get('/users/{user}', [AdminController::class, 'showUser'])->name('users.show');
     Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}',  [AdminController::class, 'destroyUser'])->name('users.destroy');
 
     // Course management
     Route::get('/courses', [AdminController::class, 'courses'])->name('courses.index');
