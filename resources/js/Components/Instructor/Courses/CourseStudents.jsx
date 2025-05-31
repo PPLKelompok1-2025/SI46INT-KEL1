@@ -41,9 +41,7 @@ export default function CourseStudents({ course }) {
                                         </p>
                                     </div>
                                 </div>
-                                <Badge>
-                                    {enrollment.progress_percentage}% Complete
-                                </Badge>
+                                <Badge>{enrollment.progress}% Complete</Badge>
                             </div>
                         ))}
                     </div>
