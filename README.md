@@ -1,68 +1,215 @@
-## Yabin's Branch
+# Coursepedia: E-Learning Platform
 
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Coursepedia is a full-featured online learning platform built with Laravel, Inertia.js, and React. Students can browse, enroll in, and complete courses; track lesson progress; take notes; earn certificates; make payments/donations; and leave reviews. Instructors can create and manage courses, content, students, assignments, quizzes, and earnings. Admins oversee users, courses, transactions, and analytics.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## 🛠 Technologies & Packages
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Backend
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Framework**: Laravel 12
+- **Routing & Controllers**: RESTful controllers with permission middleware
+- **Authentication**: Laravel Breeze + Inertia (Vue/React stack)
+- **PDF Generation**: `barryvdh/laravel-dompdf`
+- **Jobs**: Laravel Queues for asynchronous certificate generation
+- **Payments**: Midtrans PHP SDK
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Frontend
 
-## Learning Laravel
+- **Rendering**: Inertia.js + React 18
+- **Styling**: Tailwind CSS
+- **Component Library**: shadcn/ui (Dialog, Card, Button, Badge, etc.)
+- **Icons**: lucide-react
+- **State & Forms**: Inertia React hooks (`useForm`, `router`, etc.)
+- **Notifications**: `react-hot-toast`
+- **HTTP Requests**: `axios`
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Other Libraries
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- `inertiajs/inertia-laravel`
+- `inertiajs/inertia-react`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## ⚙️ Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. **Clone the repository**
 
-### Premium Partners
+    ```bash
+    git clone https://github.com/your-org/coursepedia.git
+    cd coursepedia
+    ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+2. **Install PHP dependencies**
 
-## Contributing
+    ```bash
+    composer install
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. **Install JavaScript dependencies**
 
-## Code of Conduct
+    ```bash
+    npm install
+    ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. **Environment setup**
 
-## Security Vulnerabilities
+    ```bash
+    cp .env.example .env
+    php artisan key:generate
+    ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+    Configure your `.env` with database credentials, Midtrans keys, etc.
 
-## License
+5. **Database migration & seeding**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    ```bash
+    php artisan migrate --seed
+    ```
+
+6. **Storage symlink**
+
+    ```bash
+    php artisan storage:link
+    ```
+
+7. **Compile assets**
+
+    ```bash
+    npm run dev    # or npm run build for production
+    ```
+
+8. **Run the application**
+    ```bash
+    php artisan serve
+    ```
+    Visit `http://localhost:8000`
+
+---
+
+## 🚦 Application Routes
+
+### Public Routes
+
+| Method | URI                      | Name             | Description              |
+| ------ | ------------------------ | ---------------- | ------------------------ |
+| GET    | `/`                      | home             | Landing page             |
+| GET    | `/courses`               | courses.index    | Browse all courses       |
+| GET    | `/courses/{course:slug}` | courses.show     | View course details      |
+| GET    | `/categories`            | categories.index | Browse categories        |
+| GET    | `/categories/{slug}`     | categories.show  | View courses by category |
+| GET    | `/search`                | search           | Global search            |
+
+### Authenticated (all roles)
+
+| Method | URI              | Name            | Description          |
+| ------ | ---------------- | --------------- | -------------------- |
+| GET    | `/profile`       | profile.edit    | Edit user profile    |
+| PATCH  | `/profile`       | profile.update  | Update profile       |
+| DELETE | `/profile`       | profile.destroy | Delete account       |
+| POST   | `/profile/photo` | profile.photo   | Upload profile photo |
+
+#### Payment & Donations
+
+| Method | URI                                | Name                          | Description                     |
+| ------ | ---------------------------------- | ----------------------------- | ------------------------------- |
+| GET    | `/payment/checkout/{course}`       | payment.checkout              | Course checkout page            |
+| POST   | `/payment/validate-promo`          | payment.validate-promo        | Validate promo code             |
+| POST   | `/payment/midtrans/token/{course}` | payment.midtrans.token        | Generate Midtrans payment token |
+| POST   | `/payment/midtrans/notification`   | payment.midtrans.notification | Midtrans server callback        |
+| GET    | `/payment/midtrans/callback`       | payment.midtrans.callback     | Midtrans client callback        |
+| POST   | `/payment/donation/{course}`       | payment.donation.process      | Make a donation                 |
+| GET    | `/payment/donations`               | payment.donations.index       | List user donations             |
+
+### Admin Routes (role: admin)
+
+Prefix: `/admin`, middleware: `role:admin`
+
+- **Dashboard**: GET `/admin/dashboard`
+- **Analytics**: GET `/admin/analytics`
+- **Users**: Resource `/admin/users`
+- **Courses**: Resource `/admin/courses`, PATCH approve/feature
+- **Transactions**: Resource `/admin/transactions` (index, show), POST `/admin/transactions/{transaction}/refund`
+- **Reviews**: Index, reported, manage approvals/responses
+- **Promo Codes**: Resource `/admin/promo-codes` + toggle active
+- **Withdrawal Requests**: List, show, approve/reject
+- **Reports**: `/admin/reports/sales`, `/admin/reports/users`, `/admin/reports/courses`
+
+### Instructor Routes (role: instructor)
+
+Prefix: `/instructor`, middleware: `role:instructor`
+
+- GET `/instructor/dashboard`
+- **Courses**: Resource `/instructor/courses`, PATCH publish/unpublish
+- **Students**: GET `/instructor/courses/{course}/students`
+- **Donations**: GET `/instructor/courses/{course}/donations`
+- **Reviews**: GET `/instructor/courses/{course}/reviews`
+- **Lessons**: Nested under courses (index, create, edit, update, destroy)
+- **Quizzes**: Nested resource under lessons
+- **Assignments**: Nested under lessons & submissions
+- **Earnings**: GET `/instructor/earnings`, POST `/instructor/earnings/withdraw`
+- **Payment Methods**: Resource `/instructor/payment-methods`
+
+### Student Routes (role: student)
+
+Prefix: `/student`, middleware: `role:student`
+
+- GET `/student/dashboard`
+- **Courses**:
+    - GET `/student/courses`
+    - GET `/student/courses/{slug}`
+    - POST `/student/courses/{course}/enroll`
+    - GET `/student/courses/{course}/learn`
+    - POST `/student/courses/{course}/complete`
+    - POST `/student/lessons/{lesson}/complete`
+    - Review: POST `/student/courses/{id}/review`, PUT `/student/courses/{id}/review/{review}`, DELETE same
+- **Certificates**:
+    - GET `/student/certificates`
+    - GET `/student/certificates/{id}`
+    - GET `/student/certificates/{id}/preview`
+    - GET `/student/certificates/{id}/download`
+- **Transactions**: GET `/student/transactions`, GET `/student/transactions/{id}`
+- **Donations**: GET `/student/donations`, show donation
+- **Wishlist**: GET `/student/wishlist`, POST toggle
+- **Notes**: CRUD under `/student/notes` and `/student/courses/{course}/notes`
+- **Quizzes & Assignments**: GET/POST under `/student/quizzes`, `/student/assignments`
+
+---
+
+## 📂 Project Structure
+
+```
+app/
+├─ Http/Controllers/
+│  ├─ Admin/
+│  ├─ Instructor/
+│  └─ Student/
+├─ Models/
+├─ Services/      # CertificateService
+├─ Jobs/          # GenerateCertificatePdf
+└─ Policies/
+
+resources/js/
+├─ Pages/         # Inertia pages (Admin, Instructor, Student, etc.)
+├─ Components/    # Shared UI components & layouts
+└─ Components/ui/ # Shadcn/ui primitives (Button, Dialog, etc.)
+
+routes/web.php   # All route definitions
+```
+
+---
+
+## ✅ Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m "feat: add ..."`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+---
+
+## 🔒 License
+
+This project is open source and available under the [MIT License](LICENSE).
