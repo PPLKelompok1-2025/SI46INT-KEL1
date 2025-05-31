@@ -74,8 +74,12 @@ export default function LessonContentForm({ data, setData, errors }) {
     const deleteTempVideo = (path) => {
         if (!path) return;
 
+        const normalizedPath = path.replace(/\\/g, '/');
+
         axios
-            .post(route('instructor.lessons.videos.delete'), { path })
+            .post(route('instructor.lessons.videos.delete'), {
+                path: normalizedPath,
+            })
             .then((response) => {
                 if (response.status === 200) {
                     setData('temp_video', '');

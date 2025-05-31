@@ -1,3 +1,4 @@
+import SearchComponent from '@/Components/Search/SearchComponent';
 import { Button } from '@/Components/ui/button';
 import { Link, usePage } from '@inertiajs/react';
 
@@ -31,13 +32,13 @@ export default function PublicLayout({ children, title }) {
                         >
                             Categories
                         </Link>
-                        <Link
-                            href={route('search')}
-                            className="text-gray-700 transition hover:text-primary dark:text-gray-200"
-                            prefetch="hover"
-                        >
-                            Search
-                        </Link>
+                        <SearchComponent
+                            trigger={
+                                <span className="cursor-pointer text-gray-700 transition hover:text-primary dark:text-gray-200">
+                                    Search
+                                </span>
+                            }
+                        />
                     </div>
                     <div className="flex items-center gap-4">
                         {user ? (

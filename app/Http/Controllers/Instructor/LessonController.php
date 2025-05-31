@@ -46,7 +46,7 @@ class LessonController extends Controller
      * @param  \App\Models\Course  $course
      * @return \Inertia\Response
      */
-    public function create(Course $course)
+    public function create(Request $request, Course $course)
     {
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
@@ -57,7 +57,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Create', [
             'course' => $course,
-            'nextOrder' => $maxOrder + 1
+            'nextOrder' => $maxOrder + 1,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -120,13 +121,12 @@ class LessonController extends Controller
     /**
      * Display the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function show(Lesson $lesson)
+    public function show(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to view this lesson');
@@ -141,13 +141,12 @@ class LessonController extends Controller
     /**
      * Show the form for editing the specified lesson.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Inertia\Response
      */
-    public function edit(Lesson $lesson)
+    public function edit(Request $request, Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to edit this lesson');
@@ -155,7 +154,8 @@ class LessonController extends Controller
 
         return Inertia::render('Instructor/Lessons/Edit', [
             'lesson' => $lesson,
-            'course' => $course
+            'course' => $course,
+            'activeTab' => $request->input('activeTab', 'basic')
         ]);
     }
 
@@ -163,13 +163,12 @@ class LessonController extends Controller
      * Update the specified lesson in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Lesson $lesson)
+    public function update(Request $request, Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to update this lesson');
@@ -223,13 +222,12 @@ class LessonController extends Controller
     /**
      * Remove the specified lesson from storage.
      *
+     * @param  \App\Models\Course  $course
      * @param  \App\Models\Lesson  $lesson
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Lesson $lesson)
+    public function destroy(Course $course, Lesson $lesson)
     {
-        $course = $lesson->course;
-
         if ($course->user_id !== Auth::id()) {
             return redirect()->route('instructor.courses.index')
                 ->with('error', 'You do not have permission to delete this lesson');
@@ -277,7 +275,8 @@ class LessonController extends Controller
             }
         }
 
-        return response()->json(['success' => true]);
+        return redirect()->route('instructor.courses.lessons.index', $course->id)
+            ->with('success', 'Lessons reordered successfully');
     }
 
     /**

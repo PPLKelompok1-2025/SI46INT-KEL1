@@ -332,7 +332,7 @@ export default function Edit({ promoCode }) {
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 flex items-center">
                                             <span className="flex h-full items-center border-r bg-muted px-3 text-muted-foreground">
-                                                $
+                                                Rp
                                             </span>
                                         </div>
                                         <Input
