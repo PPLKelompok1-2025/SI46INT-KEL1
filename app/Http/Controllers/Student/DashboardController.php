@@ -48,16 +48,17 @@ class DashboardController extends Controller
             $course->enrollment_id = $enrollment->id;
             $course->enrollment_status = $enrollment->completed_at ? 'completed' : 'in-progress';
             $course->enrolled_at = $enrollment->created_at;
+            $course->completed_at = $enrollment->completed_at;
             $course->average_rating = $course->getAverageRatingAttribute() ?? 0;
-            
+
             $review = Review::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->first();
-                
+
             $course->has_reviewed = !is_null($review);
             $course->review = $review;
             $course->is_approved = $review ? $review->is_approved : false;
-            
+
             return $course;
         });
 
@@ -87,16 +88,17 @@ class DashboardController extends Controller
             $course->enrollment_id = $enrollment->id;
             $course->enrollment_status = 'in-progress';
             $course->enrolled_at = $enrollment->created_at;
+            $course->completed_at = $enrollment->completed_at;
             $course->average_rating = $course->getAverageRatingAttribute() ?? 0;
-            
+
             $review = Review::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->first();
-                
+
             $course->has_reviewed = !is_null($review);
             $course->review = $review;
             $course->is_approved = $review ? $review->is_approved : false;
-            
+
             return $course;
         });
 
@@ -128,16 +130,17 @@ class DashboardController extends Controller
             $course->enrollment_id = $enrollment->id;
             $course->enrollment_status = 'completed';
             $course->enrolled_at = $enrollment->created_at;
+            $course->completed_at = $enrollment->completed_at;
             $course->average_rating = $course->getAverageRatingAttribute() ?? 0;
-            
+
             $review = Review::where('user_id', $user->id)
                 ->where('course_id', $course->id)
                 ->first();
-                
+
             $course->has_reviewed = !is_null($review);
             $course->review = $review;
             $course->is_approved = $review ? $review->is_approved : false;
-            
+
             return $course;
         });
 
