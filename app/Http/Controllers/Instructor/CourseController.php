@@ -223,6 +223,10 @@ class CourseController extends Controller
 
         $course->loadCount(['enrollments', 'reviews', 'lessons']);
 
+        $course->load(['enrollments' => function ($query) {
+            $query->with('user');
+        }]);
+
         $enrollmentStats = Enrollment::where('course_id', $course->id)
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN created_at >= NOW() - INTERVAL 30 DAY THEN 1 ELSE 0 END) as last_30_days')
             ->first();
