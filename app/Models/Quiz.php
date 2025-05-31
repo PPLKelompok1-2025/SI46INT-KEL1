@@ -15,6 +15,11 @@ class Quiz extends Model
         'description',
         'time_limit',
         'passing_score',
+        'due_date',
+    ];
+
+    protected $casts = [
+        'due_date' => 'datetime',
     ];
 
     public function lesson()
@@ -25,5 +30,10 @@ class Quiz extends Model
     public function questions()
     {
         return $this->hasMany(Question::class);
+    }
+
+    public function attempts()
+    {
+        return $this->hasMany(QuizAttempt::class);
     }
 }
