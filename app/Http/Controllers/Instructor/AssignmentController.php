@@ -234,34 +234,35 @@ class AssignmentController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function allSubmissions()
-    {
-        $instructor = Auth::user();
+    // public function allSubmissions()
+    // {
+    //     $instructor = Auth::user();
 
-        // Get all assignments from courses owned by this instructor
-        $assignments = Assignment::whereHas('lesson.course', function ($query) use ($instructor) {
-            $query->where('user_id', $instructor->id);
-        })->with('lesson.course')->get();
+    //     // Get all assignments from courses owned by this instructor
+    //     $assignments = Assignment::whereHas('lesson.course', function ($query) use ($instructor) {
+    //         $query->where('user_id', $instructor->id);
+    //     })->with('lesson.course')->get();
 
-        $assignmentIds = $assignments->pluck('id');
+    //     $assignmentIds = $assignments->pluck('id');
 
-        $submissions = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
-            ->with(['assignment.lesson.course', 'user'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+    //     $submissions = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
+    //         ->with(['assignment.lesson.course', 'user'])
+    //         ->orderBy('created_at', 'desc')
+    //         ->paginate(20);
 
-        return Inertia::render('Instructor/Assignments/AllSubmissions', [
-            'submissions' => $submissions
-        ]);
-    }
+    //     return Inertia::render('Instructor/Assignments/AllSubmissions', [
+    //         'submissions' => $submissions
+    //     ]);
+    // }
 
     /**
      * Display submissions for a specific assignment.
      *
      * @param  \App\Models\Assignment  $assignment
+     * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
      */
-    public function submissions(Assignment $assignment)
+    public function submissions(Request $request, Assignment $assignment)
     {
         // Ensure the instructor owns the course this assignment belongs to
         $lesson = $assignment->lesson;
@@ -274,9 +275,12 @@ class AssignmentController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $activeTab = $request->query('tab', 'all');
+
         return Inertia::render('Instructor/Assignments/Submissions', [
             'assignment' => $assignment->load('lesson.course'),
-            'submissions' => $submissions
+            'submissions' => $submissions,
+            'activeTab' => $activeTab,
         ]);
     }
 
@@ -306,5 +310,51 @@ class AssignmentController extends Controller
         $submission->save();
 
         return redirect()->back()->with('success', 'Submission graded successfully');
+    }
+
+    /**
+     * Download the materials file for an assignment.
+     *
+     * @param  \App\Models\Assignment  $assignment
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function downloadAssignmentMaterials(Assignment $assignment)
+    {
+        // Ensure the authenticated user is the instructor of the course
+        $instructorId = Auth::id();
+        $courseInstructorId = $assignment->lesson->course->user_id;
+
+        if ($instructorId !== $courseInstructorId) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (!$assignment->file_path || !Storage::disk('public')->exists($assignment->file_path)) {
+            abort(404, 'File not found.');
+        }
+
+        return Storage::disk('public')->download($assignment->file_path);
+    }
+
+    /**
+     * Download the submission file for an assignment.
+     *
+     * @param  \App\Models\AssignmentSubmission  $submission
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function downloadSubmission(AssignmentSubmission $submission)
+    {
+        // Ensure the authenticated user is the instructor of the course
+        $instructorId = Auth::id();
+        $courseInstructorId = $submission->assignment->lesson->course->user_id;
+
+        if ($instructorId !== $courseInstructorId) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (!$submission->file_path || !Storage::disk('public')->exists($submission->file_path)) {
+            abort(404, 'File not found.');
+        }
+
+        return Storage::disk('public')->download($submission->file_path);
     }
 }
