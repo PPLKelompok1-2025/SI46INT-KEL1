@@ -368,7 +368,8 @@ export default function Show({
                             </div>
 
                             {auth?.user ? (
-                                auth.user.id !== course.user.id ? (
+                                auth.user.id !== course.user.id &&
+                                !course.is_enrolled ? (
                                     <Button
                                         className="w-full"
                                         onClick={handleEnrollment}
@@ -378,10 +379,17 @@ export default function Show({
                                 ) : (
                                     <Button className="w-full" asChild>
                                         <Link
-                                            href={route(
-                                                'instructor.courses.show',
-                                                course.id,
-                                            )}
+                                            href={
+                                                auth.user.id === course.user.id
+                                                    ? route(
+                                                          'instructor.courses.show',
+                                                          course.id,
+                                                      )
+                                                    : route(
+                                                          'student.courses.show',
+                                                          course.slug,
+                                                      )
+                                            }
                                         >
                                             View Course
                                         </Link>

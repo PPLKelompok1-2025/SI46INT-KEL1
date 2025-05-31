@@ -95,7 +95,6 @@ class MidtransController extends Controller
                 Enrollment::create([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
-                    'status' => 'active',
                     'enrolled_at' => now(),
                     'order_id' => $orderId
                 ]);
@@ -421,7 +420,6 @@ class MidtransController extends Controller
             Enrollment::create([
                 'user_id' => $transaction->user_id,
                 'course_id' => $transaction->course_id,
-                'status' => 'active',
                 'enrolled_at' => now(),
                 'order_id' => $transaction->order_id,
             ]);

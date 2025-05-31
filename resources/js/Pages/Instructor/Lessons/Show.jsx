@@ -140,7 +140,7 @@ export default function Show({ lesson, course }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" asChild>
+                        {/* <Button variant="outline" asChild>
                             <Link
                                 href={route(
                                     'instructor.lessons.assignments.index',
@@ -150,7 +150,7 @@ export default function Show({ lesson, course }) {
                                 <ListChecks className="mr-2 h-4 w-4" />
                                 Assignments
                             </Link>
-                        </Button>
+                        </Button> */}
                         <Button
                             variant="outline"
                             onClick={handleDelete}
@@ -382,10 +382,10 @@ export default function Show({ lesson, course }) {
                         <CardContent>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <Link
-                                    // href={route(
-                                    //     'lessons.quizzes.index',
-                                    //     lesson.id,
-                                    // )}
+                                    href={route(
+                                        'instructor.lessons.quizzes.index',
+                                        lesson.id,
+                                    )}
                                     className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary hover:bg-muted/50"
                                 >
                                     <ListChecks className="h-5 w-5" />
@@ -398,10 +398,10 @@ export default function Show({ lesson, course }) {
                                 </Link>
 
                                 <Link
-                                    // href={route(
-                                    //     'lessons.assignments.index',
-                                    //     lesson.id,
-                                    // )}
+                                    href={route(
+                                        'instructor.lessons.assignments.index',
+                                        lesson.id,
+                                    )}
                                     className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary hover:bg-muted/50"
                                 >
                                     <FileText className="h-5 w-5" />
