@@ -19,9 +19,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 
-export default function Index({ auth, reviews }) {
+export default function Index({ reviews }) {
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="My Course Reviews" />
 
             <div className="space-y-6">

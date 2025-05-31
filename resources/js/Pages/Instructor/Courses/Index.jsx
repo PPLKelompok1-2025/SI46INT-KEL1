@@ -98,16 +98,16 @@ export default function Index({ courses, categories, filters = {}, stats }) {
                     >
                         {course.is_published ? 'Published' : 'Draft'}
                     </Badge>
-                    {course.is_free && (
+                    {course.is_free ? (
                         <Badge variant="outline" className="ml-2">
                             Free
                         </Badge>
-                    )}
-                    {course.is_featured && (
+                    ) : null}
+                    {course.is_featured ? (
                         <Badge variant="outline" className="ml-2">
                             Featured
                         </Badge>
-                    )}
+                    ) : null}
                 </>
             ),
         },

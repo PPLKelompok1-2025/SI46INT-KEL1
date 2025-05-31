@@ -22,7 +22,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
-export default function ReviewShow({ auth, review }) {
+export default function ReviewShow({ review }) {
     const [showReportModal, setShowReportModal] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -43,7 +43,7 @@ export default function ReviewShow({ auth, review }) {
     };
 
     return (
-        <AuthenticatedLayout user={auth.user}>
+        <AuthenticatedLayout>
             <Head title="Review Details" />
 
             <div className="space-y-6">
