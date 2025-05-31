@@ -7,21 +7,15 @@ import {
     CardTitle,
 } from '@/Components/ui/card';
 import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Editor } from '@tinymce/tinymce-react';
 import { ArrowLeft } from 'lucide-react';
-import { useRef } from 'react';
 
 export default function Edit({ note }) {
-    const editorRef = useRef(null);
     const { data, setData, put, processing, errors } = useForm({
         content: note.content,
     });
-
-    const handleEditorChange = (content) => {
-        setData('content', content);
-    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -52,43 +46,14 @@ export default function Edit({ note }) {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="content">Notes Content</Label>
-                                <Editor
-                                    onInit={(evt, editor) =>
-                                        (editorRef.current = editor)
-                                    }
+                                <Textarea
+                                    id="content"
                                     value={data.content}
-                                    onEditorChange={handleEditorChange}
-                                    init={{
-                                        height: 400,
-                                        menubar: false,
-                                        plugins: [
-                                            'advlist',
-                                            'autolink',
-                                            'lists',
-                                            'link',
-                                            'image',
-                                            'charmap',
-                                            'preview',
-                                            'anchor',
-                                            'searchreplace',
-                                            'visualblocks',
-                                            'code',
-                                            'fullscreen',
-                                            'insertdatetime',
-                                            'media',
-                                            'table',
-                                            'code',
-                                            'help',
-                                            'wordcount',
-                                        ],
-                                        toolbar:
-                                            'undo redo | blocks | ' +
-                                            'bold italic forecolor | alignleft aligncenter ' +
-                                            'alignright alignjustify | bullist numlist outdent indent | ' +
-                                            'removeformat | help',
-                                        content_style:
-                                            'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                                    }}
+                                    onChange={(e) =>
+                                        setData('content', e.target.value)
+                                    }
+                                    className="min-h-[300px]"
+                                    placeholder="Write your notes here..."
                                 />
                                 {errors.content && (
                                     <p className="text-sm text-red-500">
