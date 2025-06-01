@@ -16,11 +16,15 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        if ($request->has('redirect_to')) {
+            $request->session()->put('url.intended', $request->input('redirect_to'));
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
-            'status' => session('status'),
+            'status' => \Illuminate\Support\Facades\Session::get('status'),
         ]);
     }
 
@@ -33,13 +37,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // First determine the default URL based on user role
+        $defaultUrl = route('student.dashboard');
+
         if (Auth::user()->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+            $defaultUrl = route('admin.dashboard');
         } else if (Auth::user()->isInstructor()) {
-            return redirect()->intended(route('instructor.dashboard', absolute: false));
+            $defaultUrl = route('instructor.dashboard');
         }
 
-        return redirect()->intended(route('student.dashboard', absolute: false));
+        // Redirect to the intended URL or the default URL based on role
+        return redirect()->intended($defaultUrl);
     }
 
     /**
