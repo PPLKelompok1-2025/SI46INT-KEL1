@@ -34,6 +34,15 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import YouTube from 'react-youtube';
+
+// Helper to extract YouTube video ID from a URL
+const getYouTubeVideoId = (url) => {
+    const regExp =
+        /(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=))([^?&]+)/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+};
 
 export default function Learn({
     course,
@@ -428,14 +437,32 @@ export default function Learn({
                                             />
                                         ) : selectedLesson.video_url ? (
                                             <div className="aspect-video w-full overflow-hidden rounded-lg">
-                                                <iframe
-                                                    src={
-                                                        selectedLesson.video_url
-                                                    }
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                    allowFullScreen
-                                                    className="h-full w-full"
-                                                ></iframe>
+                                                {getYouTubeVideoId(
+                                                    selectedLesson.video_url,
+                                                ) ? (
+                                                    <YouTube
+                                                        videoId={getYouTubeVideoId(
+                                                            selectedLesson.video_url,
+                                                        )}
+                                                        opts={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            playerVars: {
+                                                                controls: 1,
+                                                            },
+                                                        }}
+                                                        className="h-full w-full"
+                                                    />
+                                                ) : (
+                                                    <iframe
+                                                        src={
+                                                            selectedLesson.video_url
+                                                        }
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                        className="h-full w-full"
+                                                    ></iframe>
+                                                )}
                                             </div>
                                         ) : null
                                     ) : (
