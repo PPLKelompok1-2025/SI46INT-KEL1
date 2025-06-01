@@ -14,6 +14,7 @@ import { Label } from '@/Components/ui/label';
 import { Switch } from '@/Components/ui/switch';
 import PublicLayout from '@/Layouts/PublicLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -24,8 +25,63 @@ export default function Register() {
         is_instructor: false,
     });
 
+    const [validationErrors, setValidationErrors] = useState({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    // Validate form fields on change
+    useEffect(() => {
+        validateForm();
+    }, [data.name, data.email, data.password, data.password_confirmation]);
+
+    const validateForm = () => {
+        const newErrors = {
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+        };
+
+        // Name validation
+        if (data.name && data.name.trim().length < 2) {
+            newErrors.name = 'Name must be at least 2 characters';
+        }
+
+        // Email validation
+        if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+            newErrors.email = 'Please enter a valid email address';
+        }
+
+        // Password validation
+        if (data.password && data.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        }
+
+        // Password confirmation validation
+        if (
+            data.password_confirmation &&
+            data.password !== data.password_confirmation
+        ) {
+            newErrors.password_confirmation =
+                'The password confirmation does not match';
+        }
+
+        setValidationErrors(newErrors);
+    };
+
     const submit = (e) => {
         e.preventDefault();
+
+        // Check if there are any validation errors
+        const hasErrors = Object.values(validationErrors).some(
+            (error) => error !== '',
+        );
+        if (hasErrors) {
+            return;
+        }
 
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
@@ -64,7 +120,9 @@ export default function Register() {
                                         required
                                     />
                                     <InputError
-                                        message={errors.name}
+                                        message={
+                                            errors.name || validationErrors.name
+                                        }
                                         className="mt-2"
                                     />
                                 </div>
@@ -84,7 +142,10 @@ export default function Register() {
                                         required
                                     />
                                     <InputError
-                                        message={errors.email}
+                                        message={
+                                            errors.email ||
+                                            validationErrors.email
+                                        }
                                         className="mt-2"
                                     />
                                 </div>
@@ -107,7 +168,10 @@ export default function Register() {
                                         required
                                     />
                                     <InputError
-                                        message={errors.password}
+                                        message={
+                                            errors.password ||
+                                            validationErrors.password
+                                        }
                                         className="mt-2"
                                     />
                                 </div>
@@ -133,7 +197,10 @@ export default function Register() {
                                         required
                                     />
                                     <InputError
-                                        message={errors.password_confirmation}
+                                        message={
+                                            errors.password_confirmation ||
+                                            validationErrors.password_confirmation
+                                        }
                                         className="mt-2"
                                     />
                                 </div>
@@ -165,7 +232,12 @@ export default function Register() {
                             <div className="mt-6">
                                 <Button
                                     className="w-full justify-center"
-                                    disabled={processing}
+                                    disabled={
+                                        processing ||
+                                        Object.values(validationErrors).some(
+                                            (error) => error !== '',
+                                        )
+                                    }
                                 >
                                     Register
                                 </Button>
