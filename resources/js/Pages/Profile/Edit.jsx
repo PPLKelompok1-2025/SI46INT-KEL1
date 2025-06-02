@@ -106,6 +106,7 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
                                     <div className="flex flex-col space-y-2">
                                         <input
                                             type="file"
+                                            id="photo"
                                             className="hidden"
                                             ref={photoInput}
                                             onChange={updatePhotoPreview}
